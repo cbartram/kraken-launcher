@@ -7,8 +7,4 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class KrakenLauncherTest {
-    @Test public void appHasAGreeting() {
-        org.example.App classUnderTest = new org.example.App();
-        assertNotNull("app should have a greeting", classUnderTest.getGreeting());
-    }
 }
