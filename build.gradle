@@ -22,8 +22,6 @@ dependencies {
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.18.1'
     implementation group: 'net.runelite', name:'client', version: runeLiteVersion
     implementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
-    implementation platform('software.amazon.awssdk:bom:2.20.43')
-    implementation 'software.amazon.awssdk:s3'
 
     testImplementation 'junit:junit:4.12'
     testImplementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.18.1'
