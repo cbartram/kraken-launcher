@@ -6,12 +6,15 @@ import net.runelite.client.externalplugins.ExternalPluginManager;
 import net.runelite.client.plugins.Plugin;
 
 import javax.swing.*;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
 @Slf4j
 public class KrakenLauncher {
+
+    private static final String KRAKEN_CLIENT_PLUGIN_NAME = "com.kraken.KrakenLoaderPlugin";
 
     public static boolean checkJavaVersion() {
         String javaHome = System.getProperty("java.home");
@@ -45,7 +48,6 @@ public class KrakenLauncher {
         );
     }
 
-
     public static void main(String[] args) {
 //        SplashScreen.init();
         checkJavaVersion();
@@ -54,11 +56,13 @@ public class KrakenLauncher {
         // Load the JAR file from S3
         try {
 //            SplashScreen.stage(0.50, null, "Downloading Client");
-            Class<? extends Plugin> krakenLoaderPlugin = new JarLoader().loadKrakenClient();
+            Map<String, Class<?>> krakenClientClasses = new JarLoader().loadKrakenClientClasses();
 //            SplashScreen.stage(0.75, null, "Loading Client");
-            ExternalPluginManager.loadBuiltin(krakenLoaderPlugin);
+            log.info("Kraken Client class loaded successfully.");
+            ExternalPluginManager.loadBuiltin((Class<? extends Plugin>) krakenClientClasses.get(KRAKEN_CLIENT_PLUGIN_NAME));
 //            SplashScreen.stage(1.00, null, "Starting RuneLite");
 //            SplashScreen.stop();
+            log.info("Starting RuneLite");
             RuneLite.main(args);
         } catch (Exception e) {
             log.error("General exception thrown while attempting to launch Kraken Client: {}", e.getMessage());

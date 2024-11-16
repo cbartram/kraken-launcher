@@ -1,6 +1,5 @@
 package com.kraken;
 
-import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -11,15 +10,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.plugins.Plugin;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
+
+@Slf4j
 public class JarLoader implements AutoCloseable {
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
@@ -62,6 +64,8 @@ public class JarLoader implements AutoCloseable {
             throw new RuntimeException("No presigned URL found in response");
         }
 
+        log.info("Successfully retrieved pre-signed url for kraken client: {}", presignedUrl);
+
         return presignedUrl;
     }
 
@@ -78,10 +82,12 @@ public class JarLoader implements AutoCloseable {
                 HttpResponse.BodyHandlers.ofByteArray()
         );
 
+        log.info("JAR download response code: {}", jarResponse.statusCode());
         if (jarResponse.statusCode() != 200) {
             throw new RuntimeException("Failed to download JAR. Status: " +
                     jarResponse.statusCode());
         }
+
 
         return jarResponse.body();
     }
@@ -108,21 +114,32 @@ public class JarLoader implements AutoCloseable {
         return classNames;
     }
 
-    public Class<? extends Plugin> loadKrakenClient() throws Exception {
+    public Map<String, Class<?>> loadKrakenClientClasses() throws Exception {
         byte[] jarBytes = downloadJar();
-        Path tempFile = Files.createTempFile("temp-jar-", ".jar");
+        Map<String, Class<?>> classMap = new HashMap<>();
+        Path tempFile = Files.createTempFile("kraken-client-tmp-", ".jar");
         Files.write(tempFile, jarBytes);
         URL jarUrl = tempFile.toUri().toURL();
 
-        try (URLClassLoader classLoader = new URLClassLoader(
-                new URL[]{jarUrl},
-                Thread.currentThread().getContextClassLoader()
-        )) {
-            return (Class<? extends Plugin>) classLoader.loadClass("com/kraken/KrakenLoaderPlugin");
+        try (URLClassLoader classLoader = new URLClassLoader(new URL[]{jarUrl}, Thread.currentThread().getContextClassLoader())) {
+            try (JarInputStream jarStream = new JarInputStream(new java.io.ByteArrayInputStream(jarBytes))) {
+                JarEntry entry;
+                while ((entry = jarStream.getNextJarEntry()) != null) {
+                    String name = entry.getName();
+                    if (name.endsWith(".class") && name.startsWith("com/kraken")) {
+                        String className = name.substring(0, name.length() - 6).replace('/', '.');
+                        log.info("Attempt load Kraken Client Class: {}", className);
+                        classMap.put(className, classLoader.loadClass(className));
+                    }
+                }
+            }
         } finally {
             Files.delete(tempFile);
         }
+
+        return classMap;
     }
+
     @Override
     public void close() {
         // No resources to close in this version, but keeping the AutoCloseable interface

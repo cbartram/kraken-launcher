@@ -16,12 +16,17 @@ repositories {
 
 def runeLiteVersion = 'latest.release'
 
+// All dependencies for the Kraken client need to be added here since the launcher process starts the kraken client.
 dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.18.1'
     implementation group: 'net.runelite', name:'client', version: runeLiteVersion
     implementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
+    implementation(group: 'com.github.oshi', name: 'oshi-core', version: '6.6.5') {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+    }
+
 
     testImplementation 'junit:junit:4.12'
     testImplementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.18.1'

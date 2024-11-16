@@ -41,7 +41,7 @@ public class SplashScreen extends JFrame implements ActionListener {
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setUndecorated(true);
-        BufferedImage logo = loadImageResource(KrakenLauncher.class, "kraken.png");
+        BufferedImage logo = loadImageResource(KrakenLauncher.class, "com/kraken/images/kraken.png");
 
         log.info("Logo: " + logo);
 
