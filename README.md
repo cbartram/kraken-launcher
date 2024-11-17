@@ -103,3 +103,14 @@ details
 ## Acknowledgments
 
 - RuneLite for making a great software! The SplashScreen was also taken from RuneLite!
+
+[contributors-shield]: https://img.shields.io/github/contributors/cbartram/kraken-launcher.svg?style=for-the-badge
+[contributors-url]: https://github.com/cbartram/kraken-launcher/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/cbartram/kraken-launcher.svg?style=for-the-badge
+[forks-url]: https://github.com/cbartram/kraken-launcher/network/members
+[stars-shield]: https://img.shields.io/github/stars/cbartram/kraken-launcher.svg?style=for-the-badge
+[stars-url]: https://github.com/cbartram/kraken-launcher/stargazers
+[issues-shield]: https://img.shields.io/github/issues/cbartram/kraken-launcher.svg?style=for-the-badge
+[issues-url]: https://github.com/cbartram/kraken-launcher/issues
+[license-shield]: https://img.shields.io/github/license/cbartram/kraken-launcher.svg?style=for-the-badge
+[license-url]: https://github.com/cbartram/kraken-launcher/blob/master/LICENSE.txt
