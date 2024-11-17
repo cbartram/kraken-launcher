@@ -49,20 +49,25 @@ public class KrakenLauncher {
     }
 
     public static void main(String[] args) {
-//        SplashScreen.init();
+        SplashScreen.init();
         checkJavaVersion();
         ClassLoader.getSystemClassLoader().setDefaultAssertionStatus(true);
 
         // Load the JAR file from S3
         try {
-//            SplashScreen.stage(0.50, null, "Downloading Client");
+            SplashScreen.stage(0.02, null, "Downloading Client");
             Map<String, Class<?>> krakenClientClasses = new JarLoader().loadKrakenClientClasses();
-//            SplashScreen.stage(0.75, null, "Loading Client");
+            Thread.sleep(400);
+            SplashScreen.stage(0.50, null, "Loading Client");
             log.info("Kraken Client class loaded successfully.");
+            Thread.sleep(600);
             ExternalPluginManager.loadBuiltin((Class<? extends Plugin>) krakenClientClasses.get(KRAKEN_CLIENT_PLUGIN_NAME));
-//            SplashScreen.stage(1.00, null, "Starting RuneLite");
-//            SplashScreen.stop();
+            SplashScreen.stage(1.00, null, "Starting Kraken Client");
             log.info("Starting RuneLite");
+
+            // Because I want users to see the cool splash screen
+            Thread.sleep(1800);
+            SplashScreen.stop();
             RuneLite.main(args);
         } catch (Exception e) {
             log.error("General exception thrown while attempting to launch Kraken Client: {}", e.getMessage());

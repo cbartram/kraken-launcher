@@ -1,6 +1,7 @@
 package com.kraken;
 
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.util.ImageUtil;
 
 import javax.annotation.Nullable;
 import javax.imageio.ImageIO;
@@ -14,6 +15,8 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
+import java.util.Enumeration;
 
 
 @Slf4j
@@ -38,13 +41,10 @@ public class SplashScreen extends JFrame implements ActionListener {
 
     private SplashScreen() throws IOException {
         setTitle("Kraken Launcher");
-
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setUndecorated(true);
-        BufferedImage logo = loadImageResource(KrakenLauncher.class, "com/kraken/images/kraken.png");
-
-        log.info("Logo: " + logo);
-
+        BufferedImage logo = loadImageResource(KrakenLauncher.class, "/com/kraken/images/kraken.png");
+        logo = ImageUtil.resizeImage(logo, 128, 128);
         setIconImage(logo);
 
         setLayout(null);
@@ -104,10 +104,12 @@ public class SplashScreen extends JFrame implements ActionListener {
         setVisible(true);
     }
 
-    private static BufferedImage loadImageResource(Class<?> c, String path) {
+    private static BufferedImage loadImageResource(Class<?> c, String path) throws IOException {
         try (InputStream in = c.getResourceAsStream(path)) {
             synchronized(ImageIO.class) {
-                return ImageIO.read(in);
+                if(in != null) {
+                    return ImageIO.read(in);
+                }
             }
         } catch (IllegalArgumentException e) {
             String filePath;
@@ -123,6 +125,7 @@ public class SplashScreen extends JFrame implements ActionListener {
         } catch (IOException e) {
             throw new RuntimeException(path, e);
         }
+        throw new IOException("Failed to read image from input stream.");
     }
 
     @Override
