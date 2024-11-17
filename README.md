@@ -44,6 +44,14 @@ gradle shadowJar
 java -jar ./build/libs/kraken-launcher-<version>-all.jar
 ```
 
+If you would like to run in developer mode to load Kraken plugins from the `/dev` prefix in S3 pass:
+
+```shell
+java -Ddeveloper-mode=true -jar ./build/libs/kraken-launcher-<version>-all.jar
+```
+
+Any args passed to the Kraken launcher jar will also be passed directly to the RuneLite client.
+
 ### Prerequisites
 
 Install gradle in order to build and run this program:
