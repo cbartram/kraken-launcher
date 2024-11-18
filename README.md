@@ -58,7 +58,6 @@ Install gradle in order to build and run this program:
 
 - [Gradle](https://gradle.org/install/)
 
-
 ## Build & Dependencies
 
 The [Kraken Client](https://github.com/cbartram/kraken-client) has several dependencies and a few custom images that it loads for its plugins. Its essential
@@ -66,17 +65,18 @@ that any dependencies the Kraken client has are shared with this repository beca
 
 If any dependencies are not synced between the launcher and client then the client will fail.
 
-## Jagex Launcher
+## Jagex Launcher & Jagex Accounts
 
-The Kraken Launcher is compatible with the Jagex launcher. In order to use the Kraken Launcher from the Jagex Launcher perform the following
-steps based on your OS.
+The Kraken Launcher is compatible with the Jagex accounts, but is not yet compatible with the launcher. In order to use the Kraken Launcher with Jagex accounts follow this guide:
 
-### Windows
+- For Windows, run `RuneLite (configure)` from the start menu. Otherwise, pass `--configure` to the launcher (i.e. `/Applications/RuneLite.app/Contents/MacOS/RuneLite --configure` on Mac).
+- In the Client arguments input box add `--insecure-write-credentials`
+- Click Save
+- Launch RuneLite normally via the Jagex launcher. RuneLite will write your launcher credentials to .runelite/credentials.properties.
+- Launch Kraken via the Kraken Launcher, and it will use the saved credentials allowing you to use your Jagex account with Kraken plugins.
 
-- Go to your RuneLite directory: `C:\Users\<YOUR_USER>\AppData\Local\RuneLite`
-- Copy the `kraken-launcher-<version>-all.jar` file to your RuneLite directory (listed above)
-- Re-name the `kraken-launcher-<version>-all.jar` to `RuneLite.jar`.
-- When launching RuneLite through the Jagex Launcher it will launch the Kraken Client instead.
+If you want to use a non-jagex account with Kraken you can delete the credentials.properties file to return your Kraken Client back to normal.
+If for any reason you need to invalidate the credentials, you can use the "End sessions" button under account settings on runescape.com.
 
 ## Running the tests
 
