@@ -25,12 +25,35 @@ this launcher JAR once, and it will automatically pull the latest [Kraken client
 
 This should be the primary way users launch the game if they intend to use Kraken plugins.
 
+Currently, all plugins for the client are released for free at [our discord here](https://discord.gg/Jxfxr3Zme2). Some features this client offers are:
+
+- Discord authentication and sign up / sign in
+- Auto plugin loading (and automatic plugin & client updates)
+- Jagex account compatibility
+- Native RuneLite Client (no injection or client modification)
+
 Although the Kraken client is safe and doesn't modify RuneLite in any way the plugins are unofficial. **We are not responsible for any bans you may incur for using this client.**
 For more information about the Kraken Client see: [Kraken Client](#about-kraken-client).
 
+# QuickStart
+
+To get started with the launcher and get yourself some plugins join [our discord here](https://discord.gg/Jxfxr3Zme2) and create a new ticket!
+You can view our currently available [plugins below](#current-plugins).
+
+# Current Plugins
+
+Currently, we have the following plugins enabled on the client:
+
+| Plugin Name       | Plugin Description                                                               | Version |
+|-------------------|----------------------------------------------------------------------------------|---------|
+| Alchemical Hydra  | Tracks your prayers, special attacks and when to switch for Hydra.               | 1.0.2   |
+| Cerberus          | Tracks ghosts, Cerberus prayer rotations, and more.                              | 1.0.0   |
+| Effect Timers     | Tracks freeze, teleblock, and other timers!                                      | 1.0.0   |
+| Chambers of Xeric | Tracks Olm rotations, specials, tick counters, and various boss helpers for CoX. | 1.0.4   |
+
 ## Getting Started
 
-To get started clone this repository with:
+To get started with development on the kraken launcher, clone this repository with:
 
 `git clone https://github.com/cbartram/kraken-launcher.git`
 
