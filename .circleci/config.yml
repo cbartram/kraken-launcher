@@ -17,11 +17,10 @@ jobs:
       - restore_cache:
           key: cache-{{ checksum "/tmp/CIRCLECI_CACHE_KEY" }}
       - run:
-          name: Set executable permission for gradlew
-          command: chmod +x gradlew
-      - run:
           name: Build Launcher Jar
-          command: ls && ./gradlew clean shadowJar
+          command: |
+            chmod +x gradlew
+            ./gradlew clean shadowJar
       - store_artifacts:
           path: build/libs
       - run:
