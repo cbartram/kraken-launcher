@@ -1,0 +1,60 @@
+version: 2.1
+jobs:
+  build-and-deploy:
+    docker:
+      - image: cimg/openjdk:11.0.25
+    steps:
+      - checkout
+      - run:
+          name: Calculate cache key
+          command: |-
+            find . -name 'pom.xml' -o -name 'gradlew*' -o -name '*.gradle*' | \
+                    sort | xargs cat > /tmp/CIRCLECI_CACHE_KEY
+      - restore_cache:
+          key: cache-{{ checksum "/tmp/CIRCLECI_CACHE_KEY" }}
+      - run:
+          name: Update packages and install prerequisites
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y unzip curl
+      - run:
+          name: Set executable permission for gradlew
+          command: chmod +x gradlew
+      - run:
+          name: Build Launcher Jar
+          command: ls && ./gradlew clean shadowJar
+      - store_artifacts:
+          path: build/libs
+      - run:
+          name: Extract Version
+          command: |
+            # Extract version from the JAR filename
+            VERSION=$(ls build/libs/kraken-launcher-*.jar | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
+            echo "export JAR_VERSION=$VERSION" >> $BASH_ENV
+            source $BASH_ENV
+            echo "Detected version: $JAR_VERSION"
+      - github-cli/setup
+      - run:
+          name: Check if release exists
+          command: |
+            if gh release view v${JAR_VERSION} &>/dev/null; then
+            echo "Release v${JAR_VERSION} already exists, skipping release creation"
+            circleci-agent step halt
+            fi
+      - run:
+          name: Create GitHub Release
+          command: |
+            JAR_PATH=$(ls build/libs/kraken-launcher-*.jar)
+            gh release create v${JAR_VERSION} \
+              --title "v${JAR_VERSION}" \
+              --notes "Kraken Launcher: v${JAR_VERSION}" \
+              --latest \
+              "${JAR_PATH}#kraken-launcher-${JAR_VERSION}.jar"
+      - save_cache:
+          key: cache-{{ checksum "/tmp/CIRCLECI_CACHE_KEY" }}
+          paths:
+            - ~/.gradle/caches
+workflows:
+  build-and-deploy:
+    jobs:
+      - build-and-deploy
