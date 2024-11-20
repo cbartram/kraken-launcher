@@ -12,14 +12,12 @@
     <img src="src/main/resources/com/kraken/images/kraken.png" alt="Logo" width="120" height="120">
   </a>
 
-<h3 align="center">Kraken Client</h3>
+<h3 align="center">Kraken Launcher</h3>
 
   <p align="center">
    A RuneLite launcher which side-loads the Kraken essential plugins.
     <br />
 </div>
-
-# Kraken Launcher
 
 Loads the latest version of the [Kraken Client](https://github.com/cbartram/kraken-client) from S3. This allows updates to be made to the Kraken client independently of user downloads.
 With this tool users no longer need to constantly download the newest version of the [Kraken Client](https://github.com/cbartram/kraken-client) to play the game. Instead, they can download
