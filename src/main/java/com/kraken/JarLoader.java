@@ -11,14 +11,12 @@ import java.nio.file.Path;
 import java.time.Duration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.plugins.Plugin;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
+import java.util.jar.Manifest;
 
 
 @Slf4j
@@ -65,7 +63,6 @@ public class JarLoader implements AutoCloseable {
         }
 
         log.info("Successfully retrieved pre-signed url for kraken client: {}", presignedUrl);
-
         return presignedUrl;
     }
 
@@ -82,7 +79,7 @@ public class JarLoader implements AutoCloseable {
                 HttpResponse.BodyHandlers.ofByteArray()
         );
 
-        log.info("JAR download response code: {}", jarResponse.statusCode());
+        log.debug("JAR download response code: {}", jarResponse.statusCode());
         if (jarResponse.statusCode() != 200) {
             throw new RuntimeException("Failed to download JAR. Status: " +
                     jarResponse.statusCode());
@@ -90,28 +87,6 @@ public class JarLoader implements AutoCloseable {
 
 
         return jarResponse.body();
-    }
-
-    public List<String> listJarClasses(byte[] jarBytes) throws Exception {
-        List<String> classNames = new ArrayList<>();
-
-        try (JarInputStream jarStream = new JarInputStream(new java.io.ByteArrayInputStream(jarBytes))) {
-            JarEntry entry;
-            while ((entry = jarStream.getNextJarEntry()) != null) {
-                String name = entry.getName();
-                // Only include .class files, exclude package-info.class and module-info.class
-                if (name.endsWith(".class") &&
-                        !name.endsWith("package-info.class") &&
-                        !name.endsWith("module-info.class")) {
-
-                    // Convert path to class name (remove .class and convert / to .)
-                    String className = name.substring(0, name.length() - 6).replace('/', '.');
-                    classNames.add(className);
-                }
-            }
-        }
-
-        return classNames;
     }
 
     public Map<String, Class<?>> loadKrakenClientClasses() throws Exception {
@@ -124,6 +99,17 @@ public class JarLoader implements AutoCloseable {
         try (URLClassLoader classLoader = new URLClassLoader(new URL[]{jarUrl}, Thread.currentThread().getContextClassLoader())) {
             try (JarInputStream jarStream = new JarInputStream(new java.io.ByteArrayInputStream(jarBytes))) {
                 JarEntry entry;
+
+                Manifest manifest = jarStream.getManifest();
+                if (manifest != null) {
+                    manifest.getMainAttributes().forEach((key, value) -> {
+                        if(key.toString().equals("Implementation-Version")) {
+                            log.info("Kraken Client Version: v{}", value);
+                            System.setProperty("kraken-client-version", value.toString());
+                        }
+                    });
+                }
+
                 while ((entry = jarStream.getNextJarEntry()) != null) {
                     String name = entry.getName();
                     if (name.endsWith(".class") && name.startsWith("com/kraken")) {
@@ -137,6 +123,7 @@ public class JarLoader implements AutoCloseable {
             Files.delete(tempFile);
         }
 
+        log.info("Loaded {} Kraken client classes.", classMap.size());
         return classMap;
     }
 
