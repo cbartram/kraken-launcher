@@ -5,16 +5,9 @@ plugins {
 
 repositories {
     mavenLocal()
-    maven {
-        url = 'https://repo.runelite.net'
-        content {
-            includeGroupByRegex("net\\.runelite.*")
-        }
-    }
     mavenCentral()
 }
 
-def runeLiteVersion = 'latest.release'
 
 // All dependencies for the Kraken client need to be added here since the launcher process starts the kraken client.
 dependencies {
@@ -45,7 +38,7 @@ tasks.withType(JavaCompile).configureEach {
 tasks.register('shadowJar', Jar) {
     dependsOn configurations.testRuntimeClasspath
     manifest {
-        attributes('Main-Class': 'com.kraken.KrakenLauncher', 'Multi-Release': true)
+        attributes('Main-Class': 'com.krakenlauncher.KrakenLauncher', 'Multi-Release': true)
     }
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE

@@ -1,4 +1,4 @@
-package com.kraken;
+package com.krakenlauncher;
 
 import java.net.URI;
 import java.net.URL;

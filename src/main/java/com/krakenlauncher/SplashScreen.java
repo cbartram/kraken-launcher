@@ -1,9 +1,7 @@
-package com.kraken;
+package com.krakenlauncher;
 
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.util.ImageUtil;
 
-import javax.annotation.Nullable;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -15,8 +13,6 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.net.URL;
-import java.util.Enumeration;
 
 
 @Slf4j
@@ -43,8 +39,8 @@ public class SplashScreen extends JFrame implements ActionListener {
         setTitle("Kraken Launcher");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setUndecorated(true);
-        BufferedImage logo = loadImageResource(KrakenLauncher.class, "/com/kraken/images/kraken.png");
-        logo = ImageUtil.resizeImage(logo, 128, 128);
+        BufferedImage logo = loadImageResource(KrakenLauncher.class, "/com/krakenlauncher/images/kraken.png");
+        logo = resizeImage(logo, 128, 128, false);
         setIconImage(logo);
 
         setLayout(null);
@@ -128,6 +124,63 @@ public class SplashScreen extends JFrame implements ActionListener {
         throw new IOException("Failed to read image from input stream.");
     }
 
+    /**
+     * Creates a {@link BufferedImage} from an {@link Image}.
+     *
+     * @param image An Image to be converted to a BufferedImage.
+     * @return      A BufferedImage instance of the same given image.
+     */
+    private static BufferedImage bufferedImageFromImage(final Image image) {
+        if (image instanceof BufferedImage) {
+            return (BufferedImage) image;
+        }
+
+        return toARGB(image);
+    }
+
+    /**
+     * Creates an ARGB {@link BufferedImage} from an {@link Image}.
+     */
+    private static BufferedImage toARGB(final Image image)
+    {
+        if (image instanceof BufferedImage && ((BufferedImage) image).getType() == BufferedImage.TYPE_INT_ARGB)
+        {
+            return (BufferedImage) image;
+        }
+
+        BufferedImage out = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = out.createGraphics();
+        g2d.drawImage(image, 0, 0, null);
+        g2d.dispose();
+        return out;
+    }
+
+
+    /**
+     * Re-size a BufferedImage to the given dimensions.
+     *
+     * @param image the BufferedImage.
+     * @param newWidth The width to set the BufferedImage to.
+     * @param newHeight The height to set the BufferedImage to.
+     * @param preserveAspectRatio Whether to preserve the original image's aspect ratio. When {@code true}, the image
+     *                               will be scaled to have a maximum of {@code newWidth} width and {@code newHeight}
+     *                               height.
+     * @return The BufferedImage with the specified dimensions
+     */
+    private static BufferedImage resizeImage(final BufferedImage image, final int newWidth, final int newHeight, final boolean preserveAspectRatio) {
+        final Image resized;
+        if (preserveAspectRatio) {
+            if (image.getWidth() > image.getHeight()) {
+                resized = image.getScaledInstance(newWidth, -1, Image.SCALE_SMOOTH);
+            } else {
+                resized = image.getScaledInstance(-1, newHeight, Image.SCALE_SMOOTH);
+            }
+        } else {
+            resized = image.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+        }
+        return bufferedImageFromImage(resized);
+    }
+
     @Override
     public void actionPerformed(ActionEvent e)
     {
@@ -179,12 +232,11 @@ public class SplashScreen extends JFrame implements ActionListener {
         });
     }
 
-    public static void stage(double overallProgress, @Nullable String actionText, String subActionText) {
+    public static void stage(double overallProgress, String actionText, String subActionText) {
         stage(overallProgress, actionText, subActionText, null);
     }
 
-    public static void stage(double startProgress, double endProgress,
-                             @Nullable String actionText, String subActionText,
+    public static void stage(double startProgress, double endProgress, String actionText, String subActionText,
                              int done, int total, boolean mib) {
         String progress;
         if (mib) {
@@ -197,7 +249,7 @@ public class SplashScreen extends JFrame implements ActionListener {
         stage(startProgress + ((endProgress - startProgress) * done / total), actionText, subActionText, progress);
     }
 
-    public static void stage(double overallProgress, @Nullable String actionText, String subActionText, @Nullable String progressText) {
+    public static void stage(double overallProgress, String actionText, String subActionText, String progressText) {
         if (INSTANCE != null) {
             INSTANCE.overallProgress = overallProgress;
             if (actionText != null) {
