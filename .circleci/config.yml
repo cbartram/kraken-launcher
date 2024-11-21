@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   github-cli: circleci/github-cli@2.5.0
+  maven: circleci/maven@2.0.0
 
 jobs:
   build-and-deploy:
@@ -16,14 +17,6 @@ jobs:
                     sort | xargs cat > /tmp/CIRCLECI_CACHE_KEY
       - restore_cache:
           key: cache-{{ checksum "/tmp/CIRCLECI_CACHE_KEY" }}
-      - run:
-          name: Install Maven
-          command: |
-            sudo apt-get install maven
-            mvn --version
-      - run:
-          name: Build Launcher JAR
-          command: mvn clean package
       - store_artifacts:
           path: target/RuneLite.jar
       - run:
@@ -57,6 +50,8 @@ jobs:
 workflows:
   build-and-deploy:
     jobs:
+      - maven/test:
+          command: clean package
       - build-and-deploy:
           context:
             - Kraken Env
