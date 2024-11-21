@@ -17,9 +17,9 @@ jobs:
                     sort | xargs cat > /tmp/CIRCLECI_CACHE_KEY
       - restore_cache:
           key: cache-{{ checksum "/tmp/CIRCLECI_CACHE_KEY" }}
-      - maven/with_cache:
-          steps:
-            - run: mvn -Dmaven.repo.remote=https://repo.maven.apache.org/maven2,https://repo.runelite.net clean package
+      - maven/install:
+          maven_version: '3.8.5'
+          build_command: mvn -X -Dmaven.repo.remote=https://repo.runelite.net,https://repo.maven.apache.org/maven2, clean package
       - run:
           name: Extract Version
           command: |
