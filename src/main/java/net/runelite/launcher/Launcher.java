@@ -675,13 +675,13 @@ public class Launcher {
 						hash = fout.hash();
 					}
 
-					if (artifact.getHash().equals(hash.toString()))
+					if (artifact.getHash().equals(hash))
 					{
 						log.debug("Patching successful for {}", artifact.getName());
 						continue;
 					}
 
-					log.debug("Patched artifact hash mismatches! {}: got {} expected {}", artifact.getName(), hash.toString(), artifact.getHash());
+					log.debug("Patched artifact hash mismatches! {}: got {} expected {}", artifact.getName(), hash, artifact.getHash());
 				}
 				catch (IOException | VerificationException e)
 				{
