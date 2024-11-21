@@ -71,7 +71,7 @@ public class ConfigurationFrame extends JFrame
 		setTitle("Kraken Launcher Configuration");
 
 		BufferedImage iconImage;
-		try (var in = ConfigurationFrame.class.getResourceAsStream(LauncherProperties.getRuneLite128()))
+		try (var in = ConfigurationFrame.class.getResourceAsStream("kraken_small.png"))
 		{
 			iconImage = ImageIO.read(in);
 		}

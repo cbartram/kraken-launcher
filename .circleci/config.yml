@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   github-cli: circleci/github-cli@2.5.0
+  maven: circleci/maven@2.0.0
 
 jobs:
   build-and-deploy:
@@ -16,17 +17,15 @@ jobs:
                     sort | xargs cat > /tmp/CIRCLECI_CACHE_KEY
       - restore_cache:
           key: cache-{{ checksum "/tmp/CIRCLECI_CACHE_KEY" }}
-      - run:
-          name: Build Launcher Jar
-          command: |
-            mvn clean package
+      - maven/test:
+          command: clean package
       - store_artifacts:
           path: target/RuneLite.jar
       - run:
           name: Extract Version
           command: |
             # Extract version from the JAR filename
-            VERSION=$(ls build/libs/kraken-launcher-*.jar | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
+            VERSION=$(ls target/kraken-launcher-*.jar | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
             echo "export JAR_VERSION=$VERSION" >> $BASH_ENV
             source $BASH_ENV
             echo "Detected version: $JAR_VERSION"
@@ -41,12 +40,11 @@ jobs:
       - run:
           name: Create GitHub Release
           command: |
-            JAR_PATH=$(ls build/libs/kraken-launcher-*.jar)
             gh release create v${JAR_VERSION} \
               --title "v${JAR_VERSION}" \
-              --notes "Kraken Launcher: v${JAR_VERSION}" \
+              --notes-from-tag \
               --latest \
-              "${JAR_PATH}#kraken-launcher-${JAR_VERSION}.jar"
+              target/RuneLite.jar
       - save_cache:
           key: cache-{{ checksum "/tmp/CIRCLECI_CACHE_KEY" }}
           paths:
