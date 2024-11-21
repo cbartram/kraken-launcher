@@ -9,7 +9,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/cbartram/kraken-loader-plugin">
-    <img src="src/main/resources/com/kraken/images/kraken.png" alt="Logo" width="120" height="120">
+    <img src="src/main/resources/net/runelite/launcher/kraken.png" alt="Logo" width="128" height="128">
   </a>
 
 <h3 align="center">Kraken Launcher</h3>
