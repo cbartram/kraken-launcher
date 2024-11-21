@@ -19,10 +19,9 @@ jobs:
       - run:
           name: Build Launcher Jar
           command: |
-            chmod +x gradlew
-            ./gradlew clean shadowJar
+            mvn clean package
       - store_artifacts:
-          path: build/libs
+          path: target/RuneLite.jar
       - run:
           name: Extract Version
           command: |

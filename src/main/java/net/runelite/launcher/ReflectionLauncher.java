@@ -60,6 +60,7 @@ class ReflectionLauncher
 		{
 			try
 			{
+				loader.setDefaultAssertionStatus(true);
 				Class<?> mainClass = loader.loadClass(LauncherProperties.getMain());
 
 				// Before we invoke the main class, check to see if RuneLite mode is disabled. If so we are clear

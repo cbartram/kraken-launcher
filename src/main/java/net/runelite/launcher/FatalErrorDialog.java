@@ -54,7 +54,6 @@ import javax.swing.JTextArea;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 
-import com.krakenlauncher.SplashScreen;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

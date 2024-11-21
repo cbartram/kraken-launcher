@@ -76,7 +76,6 @@ import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import javax.swing.SwingUtilities;
 
-import com.krakenlauncher.SplashScreen;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
