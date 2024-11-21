@@ -1,9 +1,11 @@
 package com.krakenlauncher;
 
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.RuneLite;
+import net.runelite.client.externalplugins.ExternalPluginManager;
+import net.runelite.client.plugins.Plugin;
 
 import javax.swing.*;
-import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -12,7 +14,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class KrakenLauncher {
 
-    private static final String KRAKEN_CLIENT_NAME = "com.kraken.KrakenClient";
+    private static final String KRAKEN_CLIENT_PLUGIN_NAME = "com.kraken.KrakenLoaderPlugin";
 
     public static boolean checkJavaVersion() {
         String javaHome = System.getProperty("java.home");
@@ -59,14 +61,13 @@ public class KrakenLauncher {
             SplashScreen.stage(0.50, null, "Loading Client");
             log.info("Kraken Client class loaded successfully.");
             Thread.sleep(600);
-            Class<?> krakenClientMain = krakenClientClasses.get(KRAKEN_CLIENT_NAME);
-            Method mainMethod = krakenClientMain.getMethod("main", String[].class);
+            ExternalPluginManager.loadBuiltin((Class<? extends Plugin>) krakenClientClasses.get(KRAKEN_CLIENT_PLUGIN_NAME));
             SplashScreen.stage(1.00, null, "Starting Kraken Client");
             log.info("Starting RuneLite");
 
             Thread.sleep(1200);
-            mainMethod.invoke(null, (Object) args);
             SplashScreen.stop();
+            RuneLite.main(args);
         } catch (Exception e) {
             log.error("General exception thrown while attempting to launch Kraken Client: {}", e.getMessage());
             e.printStackTrace();
