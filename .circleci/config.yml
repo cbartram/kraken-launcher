@@ -20,16 +20,15 @@ jobs:
       - maven/with_cache:
           steps:
             - run: mvn clean package
-      - store_artifacts:
-          path: target/RuneLite.jar
       - run:
           name: Extract Version
           command: |
-            # Extract version from the JAR filename
             VERSION=$(ls target/kraken-launcher-*.jar | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
             echo "export JAR_VERSION=$VERSION" >> $BASH_ENV
             source $BASH_ENV
             echo "Detected version: $JAR_VERSION"
+      - store_artifacts:
+          path: "target/kraken-launcher-$JAR_VERSION.jar"
       - github-cli/setup
       - run:
           name: Check if release exists
@@ -45,7 +44,7 @@ jobs:
               --title "v${JAR_VERSION}" \
               --notes-file ./docs/github_release.md \
               --latest \
-              target/RuneLite.jar
+              "target/kraken-launcher-${JAR_VERSION}.jar"
       - save_cache:
           key: cache-{{ checksum "/tmp/CIRCLECI_CACHE_KEY" }}
           paths:

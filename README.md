@@ -49,8 +49,10 @@ You can view our currently available [plugins below](#current-plugins).
 Perform the following to install:
 - On Windows go to `C:\Users\<YOUR_NAME>\AppData\Local\RuneLite`
 - Rename `RuneLite.jar` to `RuneLite-backup.jar` This is the official version of RuneLite if you every want to swap back.
-- Go to our [releases page](https://github.com/cbartram/kraken-launcher/releases) and download the latest version of the launcher jar file. It will be called `RuneLite.jar`.
-- Move the downloaded `RuneLite.jar` to `C:\Users\<YOUR_NAME>\AppData\Local\RuneLite`
+- Go to our [releases page](https://github.com/cbartram/kraken-launcher/releases) and download the latest version of the launcher jar file. It will be called `kraken-launcher-<version>.jar`.
+- Move the downloaded `kraken-launcher-<version>.jar` to `C:\Users\<YOUR_NAME>\AppData\Local\RuneLite` 
+- Rename `kraken-launcher-<version>.jar` to `RuneLite.jar`
+- Run with `RuneLite.exe` or via jagex launcher (see [Jagex launcher details below](#jagex-launcher--jagex-accounts))
 
 ## Jagex Launcher & Jagex Accounts
 
