@@ -56,24 +56,24 @@
 
 	<repositories>
 		<repository>
-			<id>central</id>
-			<url>https://repo.maven.apache.org/maven2</url>
-		</repository>
-		<repository>
 			<id>runelite</id>
 			<name>RuneLite</name>
 			<url>https://repo.runelite.net</url>
+		</repository>
+		<repository>
+			<id>central</id>
+			<url>https://repo.maven.apache.org/maven2</url>
 		</repository>
 	</repositories>
 
 	<pluginRepositories>
 		<pluginRepository>
-			<id>central</id>
-			<url>https://repo.maven.apache.org/maven2</url>
-		</pluginRepository>
-		<pluginRepository>
 			<id>runelite</id>
 			<url>https://repo.runelite.net</url>
+		</pluginRepository>
+		<pluginRepository>
+			<id>central</id>
+			<url>https://repo.maven.apache.org/maven2</url>
 		</pluginRepository>
 	</pluginRepositories>
 
@@ -141,8 +141,8 @@
 			<groupId>net.runelite.archive-patcher</groupId>
 			<artifactId>archive-patcher-applier</artifactId>
 			<version>1.2</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/archive-patcher-applier-1.2.jar</systemPath>
+<!--			<scope>system</scope>-->
+<!--			<systemPath>${project.basedir}/archive-patcher-applier-1.2.jar</systemPath>-->
 		</dependency>
 
 		<dependency>
