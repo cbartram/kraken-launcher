@@ -5,9 +5,16 @@ plugins {
 
 repositories {
     mavenLocal()
+    maven {
+        url = 'https://repo.runelite.net'
+        content {
+            includeGroupByRegex("net\\.runelite.*")
+        }
+    }
     mavenCentral()
 }
 
+def runeLiteVersion = 'latest.release'
 
 // All dependencies for the Kraken client need to be added here since the launcher process starts the kraken client.
 dependencies {
