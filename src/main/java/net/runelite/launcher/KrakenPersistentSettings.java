@@ -50,10 +50,10 @@ public class KrakenPersistentSettings {
     }
 
     static KrakenPersistentSettings loadSettings() {
-        File settingsFile = new File(KRAKEN_SETTINGS);
+        File settingsFile = new File(RUNELITE_DIR, "kraken/krakenprefs.json");
 
         try (InputStreamReader in = new InputStreamReader(new FileInputStream(settingsFile), StandardCharsets.UTF_8)) {
-            KrakenPersistentSettings settings = (new Gson()).fromJson(in, KrakenPersistentSettings.class);
+            KrakenPersistentSettings settings = new Gson().fromJson(in, KrakenPersistentSettings.class);
             return MoreObjects.firstNonNull(settings, new KrakenPersistentSettings());
         } catch (JsonParseException | IOException var6) {
             KrakenPersistentSettings launcherSettings = new KrakenPersistentSettings();

@@ -69,6 +69,7 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.IntConsumer;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -923,9 +924,22 @@ public class Launcher {
 
 	private static void addKrakenArgs(OptionParser parser) {
 		parser.accepts("proxy").withRequiredArg();
-		parser.accepts("hydraprofile").withRequiredArg();
+		parser.accepts("krakenprofile").withRequiredArg();
 		parser.accepts("maxmemory").withRequiredArg();
 		parser.accepts("rl");
+	}
+
+	private static String parseVersion(String clientName) {
+		String regex = "kraken-client-(\\d+\\.\\d+\\.\\d+)\\.jar";
+		Pattern pattern = Pattern.compile(regex);
+		Matcher matcher = pattern.matcher(clientName);
+
+		if (matcher.matches()) {
+			return matcher.group(1);
+		} else {
+			log.info("Version not found in the string. Defaulting to v1.0.0");
+			return "1.0.0";
+		}
 	}
 
 	private static void patchBootstrapKraken(Bootstrap bootstrap) throws IOException {
@@ -935,10 +949,19 @@ public class Launcher {
 				SwingUtilities.invokeLater(() -> (new FatalErrorDialog(krakenBootstrap.errorMessage)).open());
 				throw new RuntimeException(krakenBootstrap.errorMessage);
 			} else {
-				List<Artifact> hydraArtifacts = new ArrayList<>(Arrays.asList(krakenBootstrap.getArtifacts()));
+				List<Artifact> krakenArtifacts = new ArrayList<>(Arrays.asList(krakenBootstrap.getArtifacts()));
+
+				// Set system property for the client version
+				for(Artifact a: krakenArtifacts) {
+					if(a.getName().startsWith("kraken-client-")) {
+						// Parse version from kraken-client
+						System.setProperty("kraken-client-version", parseVersion(a.getName()));
+					}
+				}
+
 				List<Artifact> rlArtifacts = new ArrayList<>(Arrays.asList(bootstrap.getArtifacts()));
 				List<Artifact> newList = new ArrayList<>();
-				newList.addAll(hydraArtifacts);
+				newList.addAll(krakenArtifacts);
 				newList.addAll(rlArtifacts);
 				bootstrap.setArtifacts(newList.toArray(Artifact[]::new));
 			}
