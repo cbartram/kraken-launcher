@@ -26,8 +26,6 @@ package net.runelite.launcher;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import com.google.archivepatcher.applier.FileByFileV1DeltaApplier;
-import com.google.archivepatcher.shared.DefaultDeflateCompatibilityWindow;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Streams;
@@ -577,9 +575,8 @@ public class Launcher {
 		List<Artifact> toDownload = new ArrayList<>(artifacts.size());
 		Map<Artifact, Diff> diffs = new HashMap<>();
 		int totalDownloadBytes = 0;
-		final boolean isCompatible = new DefaultDeflateCompatibilityWindow().isCompatible();
 
-		if (!isCompatible && !nodiff)
+		if (!nodiff)
 		{
 			log.debug("System zlib is not compatible with archive-patcher; not using diffs");
 			nodiff = true;
@@ -650,50 +647,6 @@ public class Launcher {
 		{
 			File dest = new File(REPO_DIR, artifact.getName());
 			final int total = downloaded;
-
-			// Check if there is a diff we can download instead
-			Diff diff = diffs.get(artifact);
-			if (diff != null)
-			{
-				log.debug("Downloading diff {}", diff.getName());
-
-				try
-				{
-					ByteArrayOutputStream out = new ByteArrayOutputStream();
-					final int totalBytes = totalDownloadBytes;
-					download(diff.getPath(), diff.getHash(), (completed) ->
-						SplashScreen.stage(START_PROGRESS, .80, null, diff.getName(), total + completed, totalBytes, true),
-						out);
-					downloaded += diff.getSize();
-
-					File old = new File(REPO_DIR, diff.getFrom());
-					HashCode hash;
-					try (InputStream patchStream = new GZIPInputStream(new ByteArrayInputStream(out.toByteArray()));
-						HashingOutputStream fout = new HashingOutputStream(Hashing.sha256(), Files.newOutputStream(dest.toPath())))
-					{
-						new FileByFileV1DeltaApplier().applyDelta(old, patchStream, fout);
-						hash = fout.hash();
-					}
-
-					if (artifact.getHash().equals(hash))
-					{
-						log.debug("Patching successful for {}", artifact.getName());
-						continue;
-					}
-
-					log.debug("Patched artifact hash mismatches! {}: got {} expected {}", artifact.getName(), hash, artifact.getHash());
-				}
-				catch (IOException | VerificationException e)
-				{
-					log.warn("unable to download patch {}", diff.getName(), e);
-					// Fall through and try downloading the full artifact
-				}
-
-				// Adjust the download size for the difference
-				totalDownloadBytes -= diff.getSize();
-				totalDownloadBytes += artifact.getSize();
-			}
-
 			log.debug("Downloading {}", artifact.getName());
 
 			try (OutputStream fout = Files.newOutputStream(dest.toPath()))
