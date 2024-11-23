@@ -277,10 +277,10 @@ public class Launcher {
 				}
 
 				// fix up permissions before potentially removing the RUNASADMIN compat key
-				if (FilesystemPermissions.check()) {
-					// check() opens an error dialog
-					return;
-				}
+//				if (FilesystemPermissions.check()) {
+//					// check() opens an error dialog
+//					return;
+//				}
 
 				if (JagexLauncherCompatibility.check()) {
 					// check() opens an error dialog
