@@ -29,7 +29,7 @@
 
 	<groupId>net.runelite</groupId>
 	<artifactId>kraken-launcher</artifactId>
-	<version>1.0.6</version>
+	<version>2.7.3-SNAPSHOT</version>
 	<name>Kraken Launcher</name>
 	<description>Launcher for Kraken client</description>
 

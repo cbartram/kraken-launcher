@@ -351,10 +351,10 @@ public class Launcher {
 							return false;
 						})
 						.collect(Collectors.toList());
-// TODO If we want to check RuneLite updates uncomment this
-//				if (!checkInjectedVersion(artifacts)) {
-//					return;
-//				}
+
+				if (!checkInjectedVersion(artifacts)) {
+					return;
+				}
 
 				// Clean out old artifacts from the repository
 				clean(artifacts);
@@ -411,7 +411,7 @@ public class Launcher {
 				log.error("Failure during startup", e);
 				if (!postInstall) {
 					SwingUtilities.invokeLater(() ->
-							new FatalErrorDialog("RuneLite has encountered an unexpected error during startup.")
+							new FatalErrorDialog("RuneLite has encountered an unexpected error during startup. Likely because RuneLite released an update and it must be checked by the Kraken team before it is verified to be safe.")
 									.open());
 				}
 			} catch (Error e) {
