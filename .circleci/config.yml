@@ -23,7 +23,7 @@ jobs:
       - run:
           name: Extract Version
           command: |
-            VERSION=$(ls target/kraken-launcher-*.jar | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
+            VERSION=$(ls target/kraken-launcher-*.jar | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+-SNAPSHOT')
             echo "export JAR_VERSION=$VERSION" >> $BASH_ENV
             source $BASH_ENV
             echo "Detected version: $JAR_VERSION"
