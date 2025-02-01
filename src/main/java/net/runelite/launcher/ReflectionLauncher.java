@@ -39,7 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 class ReflectionLauncher
 {
-	static void launch(List<File> classpath, Collection<String> clientArgs, KrakenData krakenData) throws MalformedURLException
+	static void launch(List<File> classpath, Collection<String> clientArgs) throws MalformedURLException
 	{
 		URL[] jarUrls = new URL[classpath.size()];
 		int i = 0;

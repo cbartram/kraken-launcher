@@ -8,12 +8,28 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.basic.BasicProgressBarUI;
 import java.awt.*;
+import java.awt.Color;
+import java.awt.Container;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import javax.annotation.Nullable;
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JProgressBar;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+import javax.swing.UIManager;
+import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.basic.BasicProgressBarUI;
+import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j
@@ -49,6 +65,12 @@ public class SplashScreen extends JFrame implements ActionListener {
 		pane.setBackground(DARKER_GRAY_COLOR);
 
 		Font font = new Font(Font.DIALOG, Font.PLAIN, 12);
+
+		BufferedImage logo;
+		try (var in = SplashScreen.class.getResourceAsStream(LauncherProperties.getRuneLiteSplash()))
+		{
+			logo = ImageIO.read(in);
+		}
 		JLabel logoLabel = new JLabel(new ImageIcon(logo));
 		pane.add(logoLabel);
 		logoLabel.setBounds(0, 0, WIDTH, WIDTH);
@@ -191,9 +213,12 @@ public class SplashScreen extends JFrame implements ActionListener {
 		progress.setValue((int) (overallProgress * 1000));
 
 		String progressText = this.progressText;
-		if (progressText == null) {
+		if (progressText == null)
+		{
 			progress.setStringPainted(false);
-		} else {
+		}
+		else
+		{
 			progress.setStringPainted(true);
 			progress.setString(progressText);
 		}
@@ -227,6 +252,11 @@ public class SplashScreen extends JFrame implements ActionListener {
 			}
 
 			INSTANCE.timer.stop();
+			// The CLOSE_ALL_WINDOWS quit strategy on MacOS dispatches WINDOW_CLOSING events to each frame
+			// from Window.getWindows. However, getWindows uses weak refs and relies on gc to remove windows
+			// from its list, causing events to get dispatched to disposed frames. The frames handle the events
+			// regardless of being disposed and will run the configured close operation. Set the close operation
+			// to DO_NOTHING_ON_CLOSE prior to disposing to prevent this.
 			INSTANCE.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 			INSTANCE.dispose();
 			INSTANCE = null;

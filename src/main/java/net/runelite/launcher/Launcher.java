@@ -26,6 +26,8 @@ package net.runelite.launcher;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.google.archivepatcher.applier.FileByFileV1DeltaApplier;
+import com.google.archivepatcher.shared.DefaultDeflateCompatibilityWindow;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Streams;
@@ -210,9 +212,9 @@ public class Launcher {
 					jvmProps.put("sun.java2d.uiScale", Double.toString(settings.scale));
 				}
 
-				final var hardwareAccelMode = settings.hardwareAccelerationMode == HardwareAccelerationMode.AUTO ?
-						HardwareAccelerationMode.defaultMode(OS.getOs()) : settings.hardwareAccelerationMode;
-				jvmProps.putAll(hardwareAccelMode.toParams(OS.getOs()));
+			final var hardwareAccelMode = settings.hardwareAccelerationMode == HardwareAccelerationMode.AUTO ?
+				HardwareAccelerationMode.defaultMode(OS.getOs()) : settings.hardwareAccelerationMode;
+			jvmProps.putAll(hardwareAccelMode.toParams(OS.getOs()));
 
 				// As of JDK-8243269 (11.0.8) and JDK-8235363 (14), AWT makes macOS dark mode support opt-in so interfaces
 				// with hardcoded foreground/background colours don't get broken by system settings. Considering the native
@@ -221,53 +223,54 @@ public class Launcher {
 					jvmProps.put("apple.awt.application.appearance", "system");
 				}
 
-				// Stream launcher version
-				jvmProps.put(LauncherProperties.getVersionKey(), LauncherProperties.getVersion());
+			// Stream launcher version
+			jvmProps.put(LauncherProperties.getVersionKey(), LauncherProperties.getVersion());
 
 				if (settings.isSkipTlsVerification()) {
 					jvmProps.put("runelite.insecure-skip-tls-verification", "true");
 				}
 
-				log.info("RuneLite Launcher version {}", LauncherProperties.getVersion());
-				log.info("Launcher configuration:" + System.lineSeparator() + "{}", settings.configurationStr());
-				log.info("OS name: {}, version: {}, arch: {}", System.getProperty("os.name"), System.getProperty("os.version"), System.getProperty("os.arch"));
-				log.info("Using hardware acceleration mode: {}", hardwareAccelMode);
+			log.info("RuneLite Launcher version {}", LauncherProperties.getVersion());
+			log.info("Launcher configuration:" + System.lineSeparator() + "{}", settings.configurationStr());
+			log.info("OS name: {}, version: {}, arch: {}", System.getProperty("os.name"), System.getProperty("os.version"), System.getProperty("os.arch"));
+			log.info("Using hardware acceleration mode: {}", hardwareAccelMode);
 
-				// java2d properties have to be set prior to the graphics environment startup
-				setJvmParams(jvmProps);
+			// java2d properties have to be set prior to the graphics environment startup
+			setJvmParams(jvmProps);
 
 				if (settings.isSkipTlsVerification()) {
 					TrustManagerUtil.setupInsecureTrustManager();
 					// This is the only way to disable hostname verification with HttpClient - https://stackoverflow.com/a/52995420
 					System.setProperty("jdk.internal.httpclient.disableHostnameVerification", Boolean.TRUE.toString());
 				} else {
-					TrustManagerUtil.setupTrustManager();
-				}
+				TrustManagerUtil.setupTrustManager();
+			}
 
-				// setup http client after the default SSLContext is set
-				httpClient = HttpClient.newBuilder()
-						.followRedirects(HttpClient.Redirect.ALWAYS)
-						.build();
+			// setup http client after the default SSLContext is set
+			httpClient = HttpClient.newBuilder()
+				.followRedirects(HttpClient.Redirect.ALWAYS)
+				.build();
 
-				if (postInstall) {
-					postInstall();
-					return;
-				}
+			if (postInstall)
+			{
+				postInstall(settings);
+				return;
+			}
 
-				SplashScreen.init();
-				SplashScreen.stage(0, "Preparing", "Setting up environment");
+			SplashScreen.init();
+			SplashScreen.stage(0, "Preparing", "Setting up environment");
 
 				// Print out system info
 				if (log.isDebugEnabled()) {
 					final RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
 
-					log.debug("Command line arguments: {}", String.join(" ", args));
-					// This includes arguments from _JAVA_OPTIONS, which are parsed after command line flags and applied to
-					// the global VM args
-					log.debug("Java VM arguments: {}", String.join(" ", runtime.getInputArguments()));
-					log.debug("Java Environment:");
-					final Properties p = System.getProperties();
-					final Enumeration<Object> keys = p.keys();
+				log.debug("Command line arguments: {}", String.join(" ", args));
+				// This includes arguments from _JAVA_OPTIONS, which are parsed after command line flags and applied to
+				// the global VM args
+				log.debug("Java VM arguments: {}", String.join(" ", runtime.getInputArguments()));
+				log.debug("Java Environment:");
+				final Properties p = System.getProperties();
+				final Enumeration<Object> keys = p.keys();
 
 					while (keys.hasMoreElements()) {
 						final String key = (String) keys.nextElement();
@@ -307,24 +310,24 @@ public class Launcher {
 						log.error("untrusted certificate chain: {}", extract);
 					}
 
-					SwingUtilities.invokeLater(() -> FatalErrorDialog.showNetErrorWindow("downloading the bootstrap", ex));
-					return;
-				}
+				SwingUtilities.invokeLater(() -> FatalErrorDialog.showNetErrorWindow("downloading the bootstrap", ex));
+				return;
+			}
 
 
 				SplashScreen.stage(.07, null, "Checking for updates");
 
-				Updater.update(bootstrap, settings, args);
+			Updater.update(bootstrap, settings, args);
 
-				SplashScreen.stage(.10, null, "Tidying the cache");
+			SplashScreen.stage(.10, null, "Tidying the cache");
 
 				if (jvmOutdated(bootstrap)) {
 					// jvmOutdated opens an error dialog
 					return;
 				}
 
-				// update packr vmargs to the launcher vmargs from bootstrap.
-				PackrConfig.updateLauncherArgs(bootstrap);
+			// update packr vmargs to the launcher vmargs from bootstrap.
+			PackrConfig.updateLauncherArgs(bootstrap, settings);
 
 				// Determine artifacts for this OS
 				List<Artifact> artifacts = Arrays.stream(bootstrap.getArtifacts())
@@ -348,11 +351,11 @@ public class Launcher {
 								}
 							}
 
-							return false;
-						})
-						.collect(Collectors.toList());
+					return false;
+				})
+				.collect(Collectors.toList());
 
-				if (!checkInjectedVersion(artifacts)) {
+			if (!checkInjectedVersion(artifacts)) {
 					return;
 				}
 
@@ -362,33 +365,33 @@ public class Launcher {
 				try {
 					download(artifacts, settings.isNodiffs());
 				} catch (IOException ex) {
-					log.error("unable to download artifacts", ex);
-					SwingUtilities.invokeLater(() -> FatalErrorDialog.showNetErrorWindow("downloading the client", ex));
-					return;
-				}
+				log.error("unable to download artifacts", ex);
+				SwingUtilities.invokeLater(() -> FatalErrorDialog.showNetErrorWindow("downloading the client", ex));
+				return;
+			}
 
 				SplashScreen.stage(.80, null, "Verifying");
 				try {
 					verifyJarHashes(artifacts);
 				} catch (VerificationException ex) {
-					log.error("Unable to verify artifacts", ex);
-					SwingUtilities.invokeLater(() -> FatalErrorDialog.showNetErrorWindow("verifying downloaded files", ex));
-					return;
-				}
+				log.error("Unable to verify artifacts", ex);
+				SwingUtilities.invokeLater(() -> FatalErrorDialog.showNetErrorWindow("verifying downloaded files", ex));
+				return;
+			}
 
-				final Collection<String> clientArgs = getClientArgs(settings);
-				SplashScreen.stage(.90, "Starting the client", "");
+			final Collection<String> clientArgs = getClientArgs(settings);
+			SplashScreen.stage(.90, "Starting the client", "");
 
-				var classpath = artifacts.stream()
-						.map(dep -> new File(REPO_DIR, dep.getName()))
-						.collect(Collectors.toList());
+			var classpath = artifacts.stream()
+				.map(dep -> new File(REPO_DIR, dep.getName()))
+				.collect(Collectors.toList());
 
-				List<String> jvmParams = new ArrayList<>();
-				// Set hs_err_pid location. This is a jvm param and can't be set at runtime.
-				log.debug("Setting JVM crash log location to {}", CRASH_FILES);
-				jvmParams.add("-XX:ErrorFile=" + CRASH_FILES.getAbsolutePath());
-				// Add VM args from cli/env
-				jvmParams.addAll(getJvmArgs(settings));
+			List<String> jvmParams = new ArrayList<>();
+			// Set hs_err_pid location. This is a jvm param and can't be set at runtime.
+			log.debug("Setting JVM crash log location to {}", CRASH_FILES);
+			jvmParams.add("-XX:ErrorFile=" + CRASH_FILES.getAbsolutePath());
+			// Add VM args from cli/env
+			jvmParams.addAll(getJvmArgs(settings));
 
 				if (settings.launchMode == LaunchMode.REFLECT) {
 					log.info("Using launch mode: REFLECT");
@@ -558,6 +561,11 @@ public class Launcher {
 	{
 		var args = new ArrayList<>(settings.jvmArguments);
 
+		if (settings.ipv4)
+		{
+			args.add("-Djava.net.preferIPv4Stack=true");
+		}
+
 		var envArgs = System.getenv("RUNELITE_VMARGS");
 		if (!Strings.isNullOrEmpty(envArgs))
 		{
@@ -576,8 +584,9 @@ public class Launcher {
 		List<Artifact> toDownload = new ArrayList<>(artifacts.size());
 		Map<Artifact, Diff> diffs = new HashMap<>();
 		int totalDownloadBytes = 0;
+		final boolean isCompatible = new DefaultDeflateCompatibilityWindow().isCompatible();
 
-		if (!nodiff)
+		if (!isCompatible && !nodiff)
 		{
 			log.debug("System zlib is not compatible with archive-patcher; not using diffs");
 			nodiff = true;
@@ -843,7 +852,7 @@ public class Launcher {
 		return Runtime.version().feature() >= 16;
 	}
 
-	private static void postInstall()
+	private static void postInstall(LauncherSettings settings)
 	{
 		Bootstrap bootstrap;
 		try
@@ -856,7 +865,7 @@ public class Launcher {
 			return;
 		}
 
-		PackrConfig.updateLauncherArgs(bootstrap);
+		PackrConfig.updateLauncherArgs(bootstrap, settings);
 
 		log.info("Performed postinstall steps");
 	}

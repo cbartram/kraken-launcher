@@ -32,6 +32,8 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Nullable;
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -57,6 +59,7 @@ public class ConfigurationFrame extends JFrame
 	private final JCheckBox chkboxSkipTlsVerification;
 	private final JCheckBox chkboxNoUpdates;
 	private final JCheckBox chkboxSafemode;
+	private final JCheckBox chkboxIpv4;
 	private final JCheckBox chkboxRl;
 	private final JTextField txtProxy;
 	private final JTextField txtMaxMem;
@@ -66,12 +69,12 @@ public class ConfigurationFrame extends JFrame
 	private final JComboBox<HardwareAccelerationMode> comboHardwareAccelMode;
 	private final JComboBox<LaunchMode> comboLaunchMode;
 
-	private ConfigurationFrame(LauncherSettings settings, KrakenPersistentSettings krakenSettings)
+	private ConfigurationFrame(LauncherSettings settings)
 	{
-		setTitle("Kraken Launcher Configuration");
+		setTitle("RuneLite Launcher Configuration");
 
 		BufferedImage iconImage;
-		try (var in = ConfigurationFrame.class.getResourceAsStream("kraken_small.png"))
+		try (var in = ConfigurationFrame.class.getResourceAsStream(LauncherProperties.getRuneLite128()))
 		{
 			iconImage = ImageIO.read(in);
 		}
@@ -121,6 +124,12 @@ public class ConfigurationFrame extends JFrame
 			"Safe mode",
 			"Launches the client in safe mode",
 			Boolean.TRUE.equals(settings.safemode)
+		));
+
+		topPanel.add(chkboxIpv4 = checkbox(
+			"IPv4",
+			"Prefer IPv4 over IPv6",
+			Boolean.TRUE.equals(settings.ipv4)
 		));
 
 		pane.add(topPanel);
@@ -197,17 +206,20 @@ public class ConfigurationFrame extends JFrame
 		setMinimumSize(getSize());
 	}
 
-	private void save(ActionEvent l) {
+	private void save(ActionEvent l)
+	{
 		var settings = LauncherSettings.loadSettings();
 		settings.debug = chkboxDebug.isSelected();
 		settings.nodiffs = chkboxNoDiffs.isSelected();
 		settings.skipTlsVerification = chkboxSkipTlsVerification.isSelected();
 		settings.noupdates = chkboxNoUpdates.isSelected();
 		settings.safemode = chkboxSafemode.isSelected();
+		settings.ipv4 = chkboxIpv4.isSelected();
 
 		var t = txtScale.getText();
 		settings.scale = null;
-		if (!t.isEmpty()) {
+		if (!t.isEmpty())
+		{
 			try
 			{
 				settings.scale = Double.parseDouble(t);
@@ -232,7 +244,23 @@ public class ConfigurationFrame extends JFrame
 
 		LauncherSettings.saveSettings(settings);
 		this.applyKrakenSettings();
+
+		// IPv4 change requires patching packr config
+		PackrConfig.patch(config ->
+		{
+			List<String> vmArgs = (List) config.computeIfAbsent("vmArgs", k -> new ArrayList<>());
+			if (settings.ipv4)
+			{
+				vmArgs.add("-Djava.net.preferIPv4Stack=true");
+			}
+			else
+			{
+				vmArgs.remove("-Djava.net.preferIPv4Stack=true");
+			}
+		});
+
 		log.info("Updated launcher configuration:" + System.lineSeparator() + "{}", settings.configurationStr());
+
 		dispose();
 	}
 
