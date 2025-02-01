@@ -25,7 +25,6 @@
 
 plugins {
     java
-    checkstyle
     id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
@@ -99,11 +98,6 @@ tasks {
             )
         }
     }
-}
-
-checkstyle {
-    toolVersion = "6.11.2"
-    configFile = file("checkstyle.xml")
 }
 
 tasks.register<Copy>("filterAppimage") {

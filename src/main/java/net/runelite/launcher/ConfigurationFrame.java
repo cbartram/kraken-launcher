@@ -69,7 +69,7 @@ public class ConfigurationFrame extends JFrame
 	private final JComboBox<HardwareAccelerationMode> comboHardwareAccelMode;
 	private final JComboBox<LaunchMode> comboLaunchMode;
 
-	private ConfigurationFrame(LauncherSettings settings)
+	private ConfigurationFrame(LauncherSettings settings, KrakenPersistentSettings krakenSettings)
 	{
 		setTitle("RuneLite Launcher Configuration");
 

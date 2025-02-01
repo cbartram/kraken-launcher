@@ -26,6 +26,9 @@
 <!DOCTYPE module PUBLIC "-//Puppy Crawl//DTD Check Configuration 1.3//EN"
         "http://www.puppycrawl.com/dtds/configuration_1_3.dtd">
 <module name="Checker">
+	<module name="SupressionFilter">
+		<property name="file" value="suppresions.xml" />
+	</module>
 	<module name="TreeWalker">
 		<module name="LeftCurly">
 			<property name="option" value="nl"/>

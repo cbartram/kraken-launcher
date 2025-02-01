@@ -26,8 +26,6 @@ package net.runelite.launcher;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import com.google.archivepatcher.applier.FileByFileV1DeltaApplier;
-import com.google.archivepatcher.shared.DefaultDeflateCompatibilityWindow;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Streams;
@@ -584,9 +582,8 @@ public class Launcher {
 		List<Artifact> toDownload = new ArrayList<>(artifacts.size());
 		Map<Artifact, Diff> diffs = new HashMap<>();
 		int totalDownloadBytes = 0;
-		final boolean isCompatible = new DefaultDeflateCompatibilityWindow().isCompatible();
 
-		if (!isCompatible && !nodiff)
+		if (!nodiff)
 		{
 			log.debug("System zlib is not compatible with archive-patcher; not using diffs");
 			nodiff = true;
@@ -748,6 +745,8 @@ public class Launcher {
 	private static Certificate getCertificate() throws CertificateException
 	{
 		CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+		String classpath = System.getProperty("java.class.path");
+		System.out.println("Classpath: " + classpath);
 		Certificate certificate = certFactory.generateCertificate(Launcher.class.getResourceAsStream("runelite.crt"));
 		return certificate;
 	}
