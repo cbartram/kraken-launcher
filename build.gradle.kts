@@ -82,6 +82,7 @@ tasks.getByName<JavaCompile>("compileJava8Java") {
     targetCompatibility = "1.8"
 }
 
+
 tasks {
     processResources {
         filesMatching("**/*.properties") {

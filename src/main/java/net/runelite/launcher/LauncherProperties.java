@@ -47,16 +47,16 @@ public class LauncherProperties
 
 	static
 	{
-		properties.setProperty("runelite.launcher.version", "2.7.4-SNAPSHOT");
-		properties.setProperty("runelite.discord.invite", "https://${runelite_net}/redirect/launcher/discord");
-		properties.setProperty("runelite.wiki.troubleshooting.link", "https://${runelite_net}/redirect/launcher/troubleshooting");
-		properties.setProperty("runelite.dnschange.link", "https://1.1.1.1/dns/#setup-instructions");
-		properties.setProperty("runelite.download.link", "https://${runelite_net}/");
-		properties.setProperty("runelite.bootstrap", "https://static.runelite.net/bootstrap.json");
-		properties.setProperty("runelite.bootstrapsig", "https://static.runelite.net/bootstrap.json.sha256");
-		properties.setProperty("runelite.main", "net.runelite.client.RuneLite");
-		properties.setProperty("runelite.128", "${runelite_128}");
-		properties.setProperty("runelite.splash", "${runelite_splash}");
+		final InputStream in = LauncherProperties.class.getResourceAsStream("launcher.properties");
+
+		try
+		{
+			properties.load(in);
+		}
+		catch (IOException ex)
+		{
+			log.warn("Unable to load properties", ex);
+		}
 	}
 
 	public static String getVersionKey()

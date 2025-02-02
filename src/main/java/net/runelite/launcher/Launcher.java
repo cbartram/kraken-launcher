@@ -354,6 +354,7 @@ public class Launcher {
 				.collect(Collectors.toList());
 
 			if (!checkInjectedVersion(artifacts)) {
+				  log.info("The injected version does not match");
 					return;
 				}
 
@@ -985,8 +986,9 @@ public class Launcher {
 				return false;
 			} else {
 				KrakenBootstrap bootstrap = KrakenData.getKrakenBootstrap(httpClient);
+				log.info("bootstrap hash: {} injected client hash: {}", bootstrap.getHash(), injectedClient.getHash());
 				if (!bootstrap.getHash().equalsIgnoreCase(injectedClient.getHash())) {
-					SwingUtilities.invokeLater(() -> (new FatalErrorDialog("The Kraken Client is currently offline. \n\nThis is likely due to RuneLite pushing a new client update that needs to be checked by the Kraken team before we can re-open the client. \n\nKeep an eye out on announcement channels in the discord for updates, and please do not message staff members asking why it does not load. \n\nIf you would like to run vanilla RuneLite from this launcher, set runelite mode in the runelite (configure) window or use the --rl arg.")).open());
+					SwingUtilities.invokeLater(() -> (new FatalErrorDialog("The Kraken Client is currently offline. (injected version mismatch) \n\nThis is likely due to RuneLite pushing a new client update that needs to be checked by the Kraken team before we can re-open the client. \n\nKeep an eye out on announcement channels in the discord for updates, and please do not message staff members asking why it does not load. \n\nIf you would like to run vanilla RuneLite from this launcher, set runelite mode in the runelite (configure) window or use the --rl arg.")).open());
 					return false;
 				} else {
 					return true;
