@@ -22,6 +22,7 @@ public class KrakenData {
     String krakenProfile = "";
     String maxMemory = "3G";
     boolean rlMode = false;
+    boolean skipUpdatedClientCheck = false;
     boolean startDebugger = false;
 
     static {

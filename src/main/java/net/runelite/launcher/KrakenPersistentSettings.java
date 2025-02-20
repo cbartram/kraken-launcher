@@ -17,34 +17,41 @@ import static net.runelite.launcher.Launcher.RUNELITE_DIR;
 public class KrakenPersistentSettings {
     private static final String KRAKEN_SETTINGS = "krakenprefs.json";
     boolean rlMode = false;
+    boolean skipUpdatedClientCheck = false;
     String proxy = "";
     String maxMem = "1G";
 
-    void apply(OptionSet options, KrakenData data) {
+    void apply(OptionSet options) {
         if (options.has("rl")) {
-            this.rlMode = data.rlMode = true;
+            this.rlMode = Launcher.krakenData.rlMode = true;
         } else {
-            data.rlMode = this.rlMode;
+            Launcher.krakenData.rlMode = this.rlMode;
+        }
+
+        if (options.has("skipUpdatedClientCheck")) {
+            this.skipUpdatedClientCheck = Launcher.krakenData.skipUpdatedClientCheck = true;
+        } else {
+            Launcher.krakenData.skipUpdatedClientCheck = this.skipUpdatedClientCheck;
         }
 
         if (options.has("proxy")) {
-            this.proxy = data.proxy = String.valueOf(options.valueOf("proxy"));
+            this.proxy = Launcher.krakenData.proxy = String.valueOf(options.valueOf("proxy"));
         } else {
-            data.proxy = this.proxy;
+            Launcher.krakenData.proxy = this.proxy;
         }
 
         if (options.has("maxmemory")) {
-            this.maxMem = data.maxMemory = String.valueOf(options.valueOf("maxmemory"));
+            this.maxMem = Launcher.krakenData.maxMemory = String.valueOf(options.valueOf("maxmemory"));
         } else {
-            data.maxMemory = this.maxMem;
+            Launcher.krakenData.maxMemory = this.maxMem;
         }
 
         if (options.has("krakenprofile")) {
-            data.krakenProfile = String.valueOf(options.valueOf("krakenprofile"));
+            Launcher.krakenData.krakenProfile = String.valueOf(options.valueOf("krakenprofile"));
         }
 
         if (options.has("remote-debug")) {
-            data.startDebugger = true;
+            Launcher.krakenData.startDebugger = true;
         }
 
     }

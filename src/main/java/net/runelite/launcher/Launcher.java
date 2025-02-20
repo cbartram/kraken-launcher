@@ -35,7 +35,6 @@ import com.google.common.hash.Hashing;
 import com.google.common.hash.HashingOutputStream;
 import com.google.gson.Gson;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -72,7 +71,6 @@ import java.util.function.IntConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
 import javax.swing.SwingUtilities;
 
 import joptsimple.OptionException;
@@ -163,9 +161,13 @@ public class Launcher {
 			LauncherSettings settings = LauncherSettings.loadSettings();
 			// Always use reflect
 			settings.setLaunchMode(LaunchMode.REFLECT);
+
+			// Loads settings from the file at {RUNELITE_DIR}/kraken/krakenprefs.json
+			// If any options were specified via CLI those take preference over krakenprefs.json else
+			// it will use whatever was specified when --configure was run.
 			KrakenPersistentSettings krakenSettings = KrakenPersistentSettings.loadSettings();
 			settings.apply(options);
-			krakenSettings.apply(options, krakenData);
+			krakenSettings.apply(options);
 			final boolean postInstall = options.has("postinstall");
 
 			// Setup logging
@@ -978,7 +980,7 @@ public class Launcher {
 	}
 
 	private static boolean checkInjectedVersion(List<Artifact> artifacts) throws IOException {
-		if (krakenData.rlMode) {
+		if (krakenData.rlMode || krakenData.skipUpdatedClientCheck) {
 			return true;
 		} else {
 			Artifact injectedClient = artifacts.stream().filter((a) -> a.getName().contains("injected-client")).findFirst().orElse(null);
@@ -988,7 +990,7 @@ public class Launcher {
 				KrakenBootstrap bootstrap = KrakenData.getKrakenBootstrap(httpClient);
 				log.info("bootstrap hash: {} injected client hash: {}", bootstrap.getHash(), injectedClient.getHash());
 				if (!bootstrap.getHash().equalsIgnoreCase(injectedClient.getHash())) {
-					SwingUtilities.invokeLater(() -> (new FatalErrorDialog("The Kraken Client is currently offline. (injected version mismatch) \n\nThis is likely due to RuneLite pushing a new client update that needs to be checked by the Kraken team before we can re-open the client. \n\nKeep an eye out on announcement channels in the discord for updates, and please do not message staff members asking why it does not load. \n\nIf you would like to run vanilla RuneLite from this launcher, set runelite mode in the runelite (configure) window or use the --rl arg.")).open());
+					SwingUtilities.invokeLater(() -> (new FatalErrorDialog("The Kraken Client is currently offline. (injected version mismatch) \n\nThis is likely due to RuneLite pushing a new client update that needs to be checked by the Kraken team to ensure it keeps the client safe and undetected. \n\nIf you would like to run vanilla RuneLite from this launcher, set runelite mode in the runelite (configure) window or use the --rl arg or skip this message AT YOUR OWN RISK by checking the \"Skip RuneLite Update Check\" checkbox.")).open());
 					return false;
 				} else {
 					return true;

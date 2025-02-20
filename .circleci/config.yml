@@ -17,18 +17,20 @@ jobs:
                     sort | xargs cat > /tmp/CIRCLECI_CACHE_KEY
       - restore_cache:
           key: cache-{{ checksum "/tmp/CIRCLECI_CACHE_KEY" }}
-      - maven/with_cache:
-          steps:
-            - run: mvn -X -Dmaven.repo.remote=https://repo.runelite.net,https://repo.maven.apache.org/maven2, clean package
+      - run:
+          name: Build Client Jar
+          command: |
+            chmod +x gradlew
+            ./gradlew clean build
       - run:
           name: Extract Version
           command: |
-            VERSION=$(ls target/kraken-launcher-*.jar | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+-SNAPSHOT')
+            VERSION=$(ls build/libs/launcher-*.jar | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+-SNAPSHOT')
             echo "export JAR_VERSION=$VERSION" >> $BASH_ENV
             source $BASH_ENV
             echo "Detected version: $JAR_VERSION"
       - store_artifacts:
-          path: "target/kraken-launcher-$JAR_VERSION.jar"
+          path: "build/libs/kraken-launcher.jar"
       - github-cli/setup
       - run:
           name: Check if release exists
@@ -44,7 +46,7 @@ jobs:
               --title "v${JAR_VERSION}" \
               --notes-file ./docs/github_release.md \
               --latest \
-              "target/kraken-launcher-${JAR_VERSION}.jar"
+              "build/libs/kraken-launcher.jar"
       - save_cache:
           key: cache-{{ checksum "/tmp/CIRCLECI_CACHE_KEY" }}
           paths:
