@@ -38,6 +38,21 @@ Currently, all plugins for the client are released for free at [our discord here
 Although the Kraken client is safe and doesn't modify RuneLite in any way the plugins are unofficial. **We are not responsible for any bans you may incur for using this client.**
 For more information about the Kraken Client see: [Kraken Client](#about-kraken-client).
 
+# Current Plugins
+
+Currently, we have the following plugins enabled on the client:
+
+| Plugin Name       | Plugin Description                                                                              | Version |
+|-------------------|-------------------------------------------------------------------------------------------------|---------|
+| Alchemical Hydra  | Tracks your prayers, special attacks and when to switch for Hydra.                              | 1.0.2   |
+| Cerberus          | Tracks ghosts, Cerberus prayer rotations, and more.                                             | 1.0.0   |
+| Effect Timers     | Tracks freeze, teleblock, and other timers!                                                     | 1.0.0   |
+| Chambers of Xeric | Tracks Olm rotations, specials, tick counters, and various boss helpers for CoX.                | 1.0.3   |
+| Gauntlet Extended | Additional helpers for the gauntlet and corrupted gauntlet tracking hunleff prayer and attacks. | 1.0.2   |
+| Zulrah            | Tracks Zulrah rotations, where to stand, and what to pray.                                      | 1.0.1   |
+| Theatre of Blood  | All in one plugin for Theatre of Blood.                                                         | 1.0.0   |
+
+
 # QuickStart
 
 To get started with the launcher and get yourself some plugins join [our discord here](https://discord.gg/Jxfxr3Zme2) and create a new ticket!
@@ -76,18 +91,6 @@ If you would like to run RuneLite like normal without any Kraken plugins loading
 - Click Save
 
 Your next client run will not load any Kraken plugins and leave RuneLite untouched.
-
-# Current Plugins
-
-Currently, we have the following plugins enabled on the client:
-
-| Plugin Name       | Plugin Description                                                                              | Version |
-|-------------------|-------------------------------------------------------------------------------------------------|---------|
-| Alchemical Hydra  | Tracks your prayers, special attacks and when to switch for Hydra.                              | 1.0.2   |
-| Cerberus          | Tracks ghosts, Cerberus prayer rotations, and more.                                             | 1.0.0   |
-| Effect Timers     | Tracks freeze, teleblock, and other timers!                                                     | 1.0.0   |
-| Chambers of Xeric | Tracks Olm rotations, specials, tick counters, and various boss helpers for CoX.                | 1.0.3   |
-| Gauntlet Extended | Additional helpers for the gauntlet and corrupted gauntlet tracking hunleff prayer and attacks. | 1.0.2   |
 
 ## Getting Started
 
