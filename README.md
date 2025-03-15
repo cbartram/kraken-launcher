@@ -51,6 +51,8 @@ Currently, we have the following plugins enabled on the client:
 | Gauntlet Extended | Additional helpers for the gauntlet and corrupted gauntlet tracking hunleff prayer and attacks. | 1.0.2   |
 | Zulrah            | Tracks Zulrah rotations, where to stand, and what to pray.                                      | 1.0.1   |
 | Theatre of Blood  | All in one plugin for Theatre of Blood.                                                         | 1.0.0   |
+| Vorkath           | Tracks acid, woox walk paths, and vorkaths special attack count.                                | 1.0.0   |
+| Nightmare         | All in one plugin for Nightmare and Phosani's Nightmare                                         | 1.0.0   |
 
 
 # QuickStart
