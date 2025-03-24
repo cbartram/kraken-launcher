@@ -17,6 +17,7 @@ import static net.runelite.launcher.Launcher.RUNELITE_DIR;
 public class KrakenPersistentSettings {
     private static final String KRAKEN_SETTINGS = "krakenprefs.json";
     boolean rlMode = false;
+    boolean hBootstrap = false;
     boolean skipUpdatedClientCheck = false;
     String proxy = "";
     String maxMem = "1G";
@@ -26,6 +27,12 @@ public class KrakenPersistentSettings {
             this.rlMode = Launcher.krakenData.rlMode = true;
         } else {
             Launcher.krakenData.rlMode = this.rlMode;
+        }
+
+        if (options.has("hBootstrap")) {
+            this.hBootstrap = Launcher.krakenData.hBootstrap = true;
+        } else {
+            Launcher.krakenData.hBootstrap = this.hBootstrap;
         }
 
         if (options.has("skipUpdatedClientCheck")) {

@@ -24,6 +24,9 @@
  */
 package net.runelite.launcher;
 
+import lombok.extern.slf4j.Slf4j;
+
+import javax.swing.*;
 import java.io.File;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -31,15 +34,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Collection;
 import java.util.List;
-import javax.swing.UIManager;
-
-import com.sun.source.util.Plugin;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 class ReflectionLauncher
 {
-	static void launch(List<File> classpath, Collection<String> clientArgs, KrakenData krakenData) throws MalformedURLException
+	static void launch(List<File> classpath, Collection<String> clientArgs) throws MalformedURLException
 	{
 		URL[] jarUrls = new URL[classpath.size()];
 		int i = 0;
@@ -65,7 +64,7 @@ class ReflectionLauncher
 
 				// Before we invoke the main class, check to see if RuneLite mode is disabled. If so we are clear
 				// to load Kraken plugins
-				if(!krakenData.rlMode) {
+				if(!Launcher.krakenData.rlMode) {
 					log.info("RuneLite mode: disabled. Loading Kraken Plugin class");
 					Class<?> krakenPluginMainClass = loader.loadClass("com.kraken.KrakenLoaderPlugin");
 					Class<?> externalPluginManagerClass = loader.loadClass("net.runelite.client.externalplugins.ExternalPluginManager");

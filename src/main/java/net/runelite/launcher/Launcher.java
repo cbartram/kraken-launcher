@@ -34,13 +34,18 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashingOutputStream;
 import com.google.gson.Gson;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import joptsimple.OptionException;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.launcher.beans.Artifact;
+import net.runelite.launcher.beans.Bootstrap;
+import net.runelite.launcher.beans.Diff;
+import net.runelite.launcher.beans.Platform;
+import org.slf4j.LoggerFactory;
+
+import javax.swing.*;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.URI;
@@ -55,33 +60,11 @@ import java.security.SignatureException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.function.IntConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.swing.SwingUtilities;
-
-import joptsimple.OptionException;
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-import lombok.extern.slf4j.Slf4j;
-import net.runelite.launcher.beans.Artifact;
-import net.runelite.launcher.beans.Bootstrap;
-import net.runelite.launcher.beans.Diff;
-import net.runelite.launcher.beans.Platform;
-import org.slf4j.LoggerFactory;
 
 @Slf4j
 public class Launcher {
@@ -193,7 +176,7 @@ public class Launcher {
 							.map(name -> new File(REPO_DIR, name))
 							.collect(Collectors.toList());
 					try {
-						ReflectionLauncher.launch(classpath, getClientArgs(settings), krakenData);
+						ReflectionLauncher.launch(classpath, getClientArgs(settings));
 					} catch (Exception e) {
 						log.error("error launching client", e);
 					}
@@ -299,8 +282,15 @@ public class Launcher {
 				SplashScreen.stage(.05, null, "Downloading bootstrap");
 				Bootstrap bootstrap;
 				try {
-					bootstrap = getBootstrap();
-					patchBootstrapKraken(bootstrap);
+					// Returns normal RL bootstrap if kraken plugins are disabled
+					// else returns RL + kraken bootstrap
+					bootstrap = patchBootstrapKraken(getBootstrap());
+
+					// Finally merge in RL + kraken + H bootstrap or RL + H
+					if(krakenData.hBootstrap) {
+						log.info("patching H bootstrap");
+						patchBootstrapH(bootstrap);
+					}
 				} catch (IOException | VerificationException | CertificateException | SignatureException |
 						 InvalidKeyException | NoSuchAlgorithmException ex) {
 					log.error("error fetching bootstrap", ex);
@@ -397,7 +387,7 @@ public class Launcher {
 				if (settings.launchMode == LaunchMode.REFLECT) {
 					log.info("Using launch mode: REFLECT");
 					log.info("ClassPath: {}, Args: {}", classpath, clientArgs);
-					ReflectionLauncher.launch(classpath, clientArgs, krakenData);
+					ReflectionLauncher.launch(classpath, clientArgs);
 				} else if (settings.launchMode == LaunchMode.FORK || (settings.launchMode == LaunchMode.AUTO && ForkLauncher.canForkLaunch())) {
 					log.debug("Using launch mode: FORK");
 					ForkLauncher.launch(bootstrap, classpath, clientArgs, jvmProps, jvmParams);
@@ -938,6 +928,7 @@ public class Launcher {
 		parser.accepts("krakenprofile").withRequiredArg();
 		parser.accepts("maxmemory").withRequiredArg();
 		parser.accepts("rl");
+		parser.accepts("hBootstrap");
 	}
 
 	private static String parseVersion(String clientName) {
@@ -953,13 +944,14 @@ public class Launcher {
 		}
 	}
 
-	private static void patchBootstrapKraken(Bootstrap bootstrap) throws IOException {
+	private static Bootstrap patchBootstrapKraken(Bootstrap bootstrap) throws IOException {
 		if (!krakenData.rlMode) {
-			KrakenBootstrap krakenBootstrap = KrakenData.getKrakenBootstrap(httpClient);
+			KrakenBootstrap krakenBootstrap = KrakenData.getKrakenBootstrap(httpClient, false);
 			if (!Strings.isNullOrEmpty(krakenBootstrap.errorMessage)) {
 				SwingUtilities.invokeLater(() -> (new FatalErrorDialog(krakenBootstrap.errorMessage)).open());
 				throw new RuntimeException(krakenBootstrap.errorMessage);
 			} else {
+				log.info("patching bootstrap with Kraken dependencies");
 				List<Artifact> krakenArtifacts = new ArrayList<>(Arrays.asList(krakenBootstrap.getArtifacts()));
 
 				// Set system property for the client version
@@ -977,6 +969,41 @@ public class Launcher {
 				bootstrap.setArtifacts(newList.toArray(Artifact[]::new));
 			}
 		}
+
+		return bootstrap;
+	}
+
+	private static void patchBootstrapH(Bootstrap bootstrap) throws IOException {
+		KrakenBootstrap hBootstrap = KrakenData.getKrakenBootstrap(httpClient, true);
+		if (!Strings.isNullOrEmpty(hBootstrap.errorMessage)) {
+			SwingUtilities.invokeLater(() -> (new FatalErrorDialog(hBootstrap.errorMessage)).open());
+			throw new RuntimeException(hBootstrap.errorMessage);
+		}
+
+		List<Artifact> hArtifacts = new ArrayList<>(Arrays.asList(hBootstrap.getArtifacts()));
+		List<Artifact> rlArtifacts = new ArrayList<>(Arrays.asList(bootstrap.getArtifacts()));
+
+		Set<String> existingNames = new HashSet<>();
+		for (Artifact artifact : rlArtifacts) {
+			existingNames.add(artifact.getName());
+		}
+
+		// Add H dependencies that don't already exist in RuneLite
+		for (Artifact hArtifact : hArtifacts) {
+			if (!existingNames.contains(hArtifact.getName())) {
+				log.info("Adding H Artifact {} to bootstrap", hArtifact.getName());
+				rlArtifacts.add(hArtifact);
+			} else {
+				log.info(hArtifact.getName() + " already exists in the bootstrap");
+			}
+		}
+
+		log.info("------------------------ Final bootstrap ---------------------------");
+		for (Artifact artifact : rlArtifacts) {
+			log.info(artifact.getName());
+		}
+		bootstrap.setArtifacts(rlArtifacts.toArray(Artifact[]::new));
+
 	}
 
 	private static boolean checkInjectedVersion(List<Artifact> artifacts) throws IOException {
@@ -987,7 +1014,7 @@ public class Launcher {
 			if (injectedClient == null) {
 				return false;
 			} else {
-				KrakenBootstrap bootstrap = KrakenData.getKrakenBootstrap(httpClient);
+				KrakenBootstrap bootstrap = KrakenData.getKrakenBootstrap(httpClient, false);
 				log.info("bootstrap hash: {} injected client hash: {}", bootstrap.getHash(), injectedClient.getHash());
 				if (!bootstrap.getHash().equalsIgnoreCase(injectedClient.getHash())) {
 					SwingUtilities.invokeLater(() -> (new FatalErrorDialog("The Kraken Client is currently offline. (injected version mismatch) \n\nThis is likely due to RuneLite pushing a new client update that needs to be checked by the Kraken team to ensure it keeps the client safe and undetected. \n\nIf you would like to run vanilla RuneLite from this launcher, set runelite mode in the runelite (configure) window or use the --rl arg or skip this message AT YOUR OWN RISK by checking the \"Skip RuneLite Update Check\" checkbox.")).open());
