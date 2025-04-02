@@ -111,12 +111,19 @@ Run tests with:
 
 ## Deployment
 
-Deployment for this is handled through Circle CI. It builds the JAR file and creates a GitHub release for the newest
-version of the launcher.
+Deployment for this is handled through InnoSetup to create a .exe installer. The installer expects a pre-built jar artifact in `/build/libs/RuneLite.jar`
+
+- Create a build with `./gradlew build`, this creates the `RuneLite.jar` file in `build/libs`
+- Run `./gradlew filterInnosetup` to generate a .iss setup file for Kraken
+- Run [InnoSetup](https://jrsoftware.org/isinfo.php)
+- Load the `kraken64.iss` file into InnoSetup from `/build/filtered-resources`
+- Click the play button to build `KrakenSetup.exe`
+- Upload `KrakenSetup.exe` to S3 and make sure the frontend is updated to pull the latest version down!
 
 ## Built With
 
 - [Java](https://www.java.org/) - Programming Language Used
+- [InnoSetup](https://jrsoftware.org/isinfo.php) - Executable build software
 - [Gradle](https://gradle.org/) - Build Tool
 
 ## Contributing
