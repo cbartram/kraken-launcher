@@ -40,25 +40,8 @@ For more information about the Kraken Client see: [Kraken Client](#about-kraken-
 
 # Current Plugins
 
-Currently, we have the following plugins enabled on the client:
-
-| Plugin Name       | Plugin Description                                                                              | Version |
-|-------------------|-------------------------------------------------------------------------------------------------|---------|
-| Alchemical Hydra  | Tracks your prayers, special attacks and when to switch for Hydra.                              | 1.0.2   |
-| Cerberus          | Tracks ghosts, Cerberus prayer rotations, and more.                                             | 1.0.0   |
-| Effect Timers     | Tracks freeze, teleblock, and other timers!                                                     | 1.0.0   |
-| Chambers of Xeric | Tracks Olm rotations, specials, tick counters, and various boss helpers for CoX.                | 1.0.3   |
-| Gauntlet Extended | Additional helpers for the gauntlet and corrupted gauntlet tracking hunleff prayer and attacks. | 1.0.2   |
-| Zulrah            | Tracks Zulrah rotations, where to stand, and what to pray.                                      | 1.0.1   |
-| Theatre of Blood  | All in one plugin for Theatre of Blood.                                                         | 1.0.0   |
-| Vorkath           | Tracks acid, woox walk paths, and vorkaths special attack count.                                | 1.0.0   |
-| Nightmare         | All in one plugin for Nightmare and Phosani's Nightmare                                         | 1.0.0   |
-
-
-# QuickStart
-
-To get started with the launcher and get yourself some plugins join [our discord here](https://discord.gg/Jxfxr3Zme2) and create a new ticket!
-You can view our currently available [plugins below](#current-plugins).
+To view, download, and enable plugins,
+check out our website at [kraken-plugins.duckdns.org](https://kraken-plugins.duckdns.org/plugins)
 
 ## Installation
 
@@ -72,7 +55,7 @@ Perform the following to install:
 
 ## Jagex Launcher & Jagex Accounts
 
-The Kraken Launcher is compatible with the Jagex accounts as well as the Jagex launcher. In order to use the Kraken Launcher with Jagex accounts follow this guide:
+The Kraken Launcher is compatible with the Jagex accounts as well as the Jagex launcher. In order to use the Kraken Launcher with Jagex accounts, follow this guide:
 
 - For Windows, run `RuneLite (configure)` from the start menu. Otherwise, pass `--configure` to the launcher (i.e. `/Applications/RuneLite.app/Contents/MacOS/RuneLite --configure` on Mac).
 - In the Client arguments input box add `--insecure-write-credentials`

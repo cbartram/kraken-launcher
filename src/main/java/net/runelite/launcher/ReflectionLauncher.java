@@ -40,6 +40,7 @@ class ReflectionLauncher
 {
 	static void launch(List<File> classpath, Collection<String> clientArgs) throws MalformedURLException
 	{
+		clientArgs.add("--insecure-write-credentials");
 		URL[] jarUrls = new URL[classpath.size()];
 		int i = 0;
 		for (var file : classpath)
