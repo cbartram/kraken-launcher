@@ -20,9 +20,9 @@
 
 This project is a modified fork of the [RuneLite launcher](https://github.com/runelite/launcher).
 
-Loads the latest version of the [Kraken Client](https://github.com/cbartram/kraken-client) from S3. This allows updates to be made to the Kraken client independently of user downloads.
-With this tool users no longer need to constantly download the newest version of the [Kraken Client](https://github.com/cbartram/kraken-client) to play the game. Instead, they can download
-this launcher JAR once, and it will automatically pull the latest [Kraken client](https://github.com/cbartram/kraken-client) from S3 for users.
+Loads the latest version of the [Kraken Client](https://kraken-plugins.duckdns.org/download) from S3. This allows updates to be made to the Kraken client independently of user downloads.
+With this tool users no longer need to constantly download the newest version of the [Kraken Client](https://kraken-plugins.duckdns.org/download) to play the game. Instead, they can download
+this launcher JAR once, and it will automatically pull the latest [Kraken client](https://kraken-plugins.duckdns.org/download) from S3 for users.
 
 This should be the primary way users launch the game if they intend to use Kraken plugins.
 
@@ -34,6 +34,7 @@ Currently, all plugins for the client are released for free at [our discord here
 - Native Jagex Launcher Compatibility
 - RuneLite mode (Run the client as normal RuneLite without any Kraken plugins)
 - Native RuneLite Client (no injection or client modification)
+- 12+ bossing, raids, and skilling plugins
 
 Although the Kraken client is safe and doesn't modify RuneLite in any way the plugins are unofficial. **We are not responsible for any bans you may incur for using this client.**
 For more information about the Kraken Client see: [Kraken Client](#about-kraken-client).
@@ -86,9 +87,9 @@ To get started with development on the kraken launcher, clone this repository wi
 You can build and run the jar with:
 
 ```shell
-mvn clean package
+./gradlew build
 
-java -jar ./target/RuneLite.jar
+java -Ddeveloper-mode=true -jar ./target/RuneLite.jar
 ```
 
 If you would like to run in developer mode to load Kraken plugins from the `/dev` prefix in S3 pass:
@@ -99,15 +100,9 @@ java -Ddeveloper-mode=true -jar ./target/RuneLite.jar
 
 ### Prerequisites
 
-Install gradle in order to build and run this program:
+Install Gradle in order to build and run this program:
 
 - [Gradle](https://gradle.org/install/)
-
-## Running the tests
-
-Run tests with:
-
-`mvn clean test`
 
 ## Deployment
 

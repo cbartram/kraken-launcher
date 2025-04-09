@@ -956,9 +956,9 @@ public class Launcher {
 
 				// Set system property for the client version
 				for(Artifact a: krakenArtifacts) {
-					if(a.getName().startsWith("kraken-client-")) {
+					if(a.getName().toLowerCase().startsWith("kraken-client-")) {
 						// Parse version from kraken-client
-						System.setProperty("kraken-client-version", parseVersion(a.getName()));
+						System.setProperty("kraken-client-version", parseVersion(a.getName().toLowerCase()));
 					}
 				}
 
