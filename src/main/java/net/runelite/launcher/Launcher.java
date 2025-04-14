@@ -285,12 +285,6 @@ public class Launcher {
 					// Returns normal RL bootstrap if kraken plugins are disabled
 					// else returns RL + kraken bootstrap
 					bootstrap = patchBootstrapKraken(getBootstrap());
-
-					// Finally merge in RL + kraken + H bootstrap or RL + H
-					if(krakenData.hBootstrap) {
-						log.info("patching H bootstrap");
-						patchBootstrapH(bootstrap);
-					}
 				} catch (IOException | VerificationException | CertificateException | SignatureException |
 						 InvalidKeyException | NoSuchAlgorithmException ex) {
 					log.error("error fetching bootstrap", ex);

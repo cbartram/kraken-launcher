@@ -51,7 +51,6 @@ public class ConfigurationFrame extends JFrame
 	private final JCheckBox chkboxIpv4;
 	private final JCheckBox chkboxRl;
 	private final JCheckBox chkBoxSkipClientUpdateCheck;
-	private final JCheckBox chkboxHBootstrap;
 	private final JTextField txtProxy;
 	private final JTextField txtMaxMem;
 	private final JTextField txtScale;
@@ -86,7 +85,6 @@ public class ConfigurationFrame extends JFrame
 		topPanel.setLayout(new GridLayout(3, 2, 0, 0));
 		topPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
 		this.chkboxRl = this.addRuneLiteCheckbox(topPanel, krakenSettings);
-		this.chkboxHBootstrap = this.addHBootstrapCheckbox(topPanel, krakenSettings);
 		this.chkBoxSkipClientUpdateCheck = this.addSkipClientUpdateCheckCheckbox(topPanel, krakenSettings);
 
 		topPanel.add(chkboxDebug = checkbox(
@@ -291,12 +289,6 @@ public class ConfigurationFrame extends JFrame
 		return box;
 	}
 
-	private JCheckBox addHBootstrapCheckbox(JPanel topPanel, KrakenPersistentSettings settings) {
-		JCheckBox box = checkbox("H Bootstrap", "Merge multiple dependency bootstrap configurations", Boolean.TRUE.equals(settings.rlMode));
-		topPanel.add(box);
-		return box;
-	}
-
 	private JCheckBox addSkipClientUpdateCheckCheckbox(JPanel topPanel, KrakenPersistentSettings settings) {
 		JCheckBox box = checkbox("Skip RuneLite Update check", "Skips security checks when new RuneLite clients are released.", Boolean.TRUE.equals(settings.skipUpdatedClientCheck));
 		topPanel.add(box);
@@ -334,7 +326,6 @@ public class ConfigurationFrame extends JFrame
 		KrakenPersistentSettings settings = KrakenPersistentSettings.loadSettings();
 		settings.skipUpdatedClientCheck = this.chkBoxSkipClientUpdateCheck.isSelected();
 		settings.rlMode = this.chkboxRl.isSelected();
-		settings.hBootstrap = this.chkboxHBootstrap.isSelected();
 		settings.proxy = this.txtProxy.getText();
 		settings.maxMem = this.txtMaxMem.getText();
 		KrakenPersistentSettings.saveSettings(settings);

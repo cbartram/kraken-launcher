@@ -108,7 +108,7 @@ Install Gradle in order to build and run this program:
 
 Deployment for this is handled through InnoSetup to create a .exe installer. The installer expects a pre-built jar artifact in `/build/libs/RuneLite.jar`
 
-- Create a build with `./gradlew build`, this creates the `RuneLite.jar` file in `build/libs`
+- Create a build with `./gradlew clean build`, this creates the `RuneLite.jar` file in `build/libs`
 - Run `./gradlew filterInnosetup` to generate a .iss setup file for Kraken
 - Run [InnoSetup](https://jrsoftware.org/isinfo.php)
 - Load the `kraken64.iss` file into InnoSetup from `/build/filtered-resources`
