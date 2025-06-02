@@ -19,7 +19,7 @@ jobs:
         java-version: 11
         distribution: temurin
         cache: gradle
-    - uses: ilammy/msvc-dev-cmd@v1 # for nmake
+    - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # for nmake
       with:
         arch: x64
     - name: build detours x64
@@ -27,7 +27,7 @@ jobs:
       run: |
         cd detours/src
         nmake
-    - uses: ilammy/msvc-dev-cmd@v1 # for nmake
+    - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # for nmake
       with:
         arch: x86
     - name: build detours x86
@@ -35,7 +35,7 @@ jobs:
       run: |
         cd detours/src
         nmake
-    - uses: ilammy/msvc-dev-cmd@v1 # for nmake
+    - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # for nmake
       with:
         arch: amd64_arm64
     - name: build detours aarch64
@@ -63,7 +63,7 @@ jobs:
           RuneLiteSetupAArch64.exe
         if-no-files-found: error
   linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
     - run: sudo apt update
     - run: sudo apt install -y gcc-9-aarch64-linux-gnu g++-9-aarch64-linux-gnu
@@ -78,10 +78,8 @@ jobs:
         cache: gradle
     - name: build
       run: ./gradlew build -P RUNELITE_BUILD=$RUNELITE_PROFILE
-    - name: linux-x64
-      run: ./build-linux-x86_64.sh
-    - name: linux-aarch64
-      run: ./build-linux-aarch64.sh
+    - run: ./build-linux-x86_64.sh
+    - run: ./build-linux-aarch64.sh
     - uses: actions/upload-artifact@v4
       with:
         name: jar
@@ -91,6 +89,9 @@ jobs:
       with:
         name: linux
         path: |
+          appimagetool-x86_64.AppImage
+          runtime-x86_64
+          runtime-aarch64
           RuneLite.AppImage
           RuneLite-aarch64.AppImage
         if-no-files-found: error

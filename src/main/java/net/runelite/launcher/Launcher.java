@@ -80,8 +80,9 @@ public class Launcher {
 
 	private static HttpClient httpClient;
 
-	public static void main(String[] args) throws InterruptedException {
-		ClassLoader.getSystemClassLoader().setDefaultAssertionStatus(true);
+    private static OptionSet parseArgs(String[] args) {
+		args = parseApplicationURI(args);
+
 		OptionParser parser = new OptionParser(false);
 		parser.allowsUnrecognizedOptions();
 		parser.accepts("postinstall", "Perform post-install tasks");
@@ -137,6 +138,28 @@ public class Launcher {
 			}
 			System.exit(0);
 		}
+
+		return options;
+	}
+
+	private static String[] parseApplicationURI(String[] args)
+	{
+		// runelite-jav://oldschool2.runescape.com:80/jav_config.ws
+		if (args.length > 0 && args[0].startsWith("runelite-jav://"))
+		{
+			log.info("Launched using URI {}", args[0]);
+			return new String[]{
+				"--jav_config", args[0].replace("runelite-jav", "http")
+			};
+		}
+
+		return args;
+	}
+
+	public static void main(String[] args)
+	{
+        ClassLoader.getSystemClassLoader().setDefaultAssertionStatus(true);
+		final OptionSet options = parseArgs(args);
 
 		if (options.has("configure")) {
 			ConfigurationFrame.open();
@@ -407,7 +430,12 @@ public class Launcher {
 				log.error("Failure during startup", e);
 				throw e;
 			} finally {
-				Thread.sleep(1100);
+				try {
+					Thread.sleep(1100);
+				} catch (InterruptedException e) {
+					log.warn("Interrupted while waiting for splash screen to close", e);
+					Thread.currentThread().interrupt();
+				}
 				SplashScreen.stop();
 			}
 		}
