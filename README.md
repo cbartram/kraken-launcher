@@ -26,7 +26,7 @@ this launcher JAR once, and it will automatically pull the latest [Kraken client
 
 This should be the primary way users launch the game if they intend to use Kraken plugins.
 
-Currently, all plugins for the client are released for free at [our discord here](https://discord.gg/Jxfxr3Zme2). Some features this client offers are:
+Currently, all plugins for the client are released for free at [our website here](https://kraken-plugins.duckdns.org). Some features this client offers are:
 
 - Discord authentication and sign up / sign in
 - Auto plugin loading (and automatic plugin & client updates)
@@ -34,7 +34,13 @@ Currently, all plugins for the client are released for free at [our discord here
 - Native Jagex Launcher Compatibility
 - RuneLite mode (Run the client as normal RuneLite without any Kraken plugins)
 - Native RuneLite Client (no injection or client modification)
-- 12+ bossing, raids, and skilling plugins
+- 18+ bossing, raids, and skilling plugins
+
+Kraken Plugins are not "bots". They do not perform any type of automation for you. Instead they show you useful information about the boss or raid encounter for example:
+- Hydra attack counter
+- Highlight skull locations for P2 wardens
+- Tick counter for Soteseg green ball
+- etc...
 
 Although the Kraken client is safe and doesn't modify RuneLite in any way the plugins are unofficial. **We are not responsible for any bans you may incur for using this client.**
 For more information about the Kraken Client see: [Kraken Client](#about-kraken-client).
@@ -47,11 +53,9 @@ check out our website at [kraken-plugins.duckdns.org](https://kraken-plugins.duc
 ## Installation
 
 Perform the following to install:
-- On Windows go to `C:\Users\<YOUR_NAME>\AppData\Local\RuneLite`
-- Rename `RuneLite.jar` to `RuneLite-backup.jar` This is the official version of RuneLite if you every want to swap back.
-- Go to our [releases page](https://github.com/cbartram/kraken-launcher/releases) and download the latest version of the launcher jar file. It will be called `kraken-launcher-<version>.jar`.
-- Move the downloaded `kraken-launcher-<version>.jar` to `C:\Users\<YOUR_NAME>\AppData\Local\RuneLite` 
-- Rename `kraken-launcher-<version>.jar` to `RuneLite.jar`
+- Download and install [RuneLite](https://runelite.net/) if you haven't already.
+- Download the `KrakenInstaller.exe` from [Kraken Plugins Website](https://kraken-plugins.duckdns.org/download).
+- Run the `KrakenInstaller.exe` file (you may have to click "More options" and trust the executable.
 - Run with `RuneLite.exe` or via jagex launcher (see [Jagex launcher details below](#jagex-launcher--jagex-accounts))
 
 ## Jagex Launcher & Jagex Accounts
@@ -78,7 +82,7 @@ If you would like to run RuneLite like normal without any Kraken plugins loading
 
 Your next client run will not load any Kraken plugins and leave RuneLite untouched.
 
-## Getting Started
+## Development
 
 To get started with development on the kraken launcher, clone this repository with:
 
