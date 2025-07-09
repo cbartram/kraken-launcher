@@ -3,9 +3,11 @@ version: 2.1
 orbs:
   github-cli: circleci/github-cli@2.5.0
   maven: circleci/maven@2.0.0
+  aws-cli: circleci/aws-cli@4.1.3
+  win: circleci/windows@5.0.0
 
 jobs:
-  build-and-deploy:
+  build-jar:
     docker:
       - image: cimg/openjdk:11.0.25
     steps:
@@ -29,31 +31,93 @@ jobs:
             echo "export JAR_VERSION=$VERSION" >> $BASH_ENV
             source $BASH_ENV
             echo "Detected version: $JAR_VERSION"
-      - store_artifacts:
-          path: "build/libs/kraken-launcher.jar"
-      - github-cli/setup
       - run:
-          name: Check if release exists
+          name: Generate InnoSetup file
           command: |
-            if gh release view v${JAR_VERSION} &>/dev/null; then
-            echo "Release v${JAR_VERSION} already exists, skipping release creation"
-            circleci-agent step halt
-            fi
-      - run:
-          name: Create GitHub Release
-          command: |
-            gh release create v${JAR_VERSION} \
-              --title "v${JAR_VERSION}" \
-              --notes-file ./docs/github_release.md \
-              --latest \
-              "build/libs/kraken-launcher.jar"
+            ./gradlew filterInnosetup
+      - persist_to_workspace:
+          root: .
+          paths:
+            - build/libs/RuneLite.jar
+            - build/filtered-resources/kraken64.iss
       - save_cache:
           key: cache-{{ checksum "/tmp/CIRCLECI_CACHE_KEY" }}
           paths:
             - ~/.gradle/caches
+
+  build-windows-exe:
+    executor:
+      name: win/default
+      shell: powershell.exe
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Install InnoSetup
+          command: |
+            $url = "https://jrsoftware.org/download.php/is.exe"
+            $output = "innosetup.exe"
+            Invoke-WebRequest -Uri $url -OutFile $output
+            
+            Start-Process -FilePath $output -ArgumentList "/SILENT" -Wait
+            
+            $env:PATH += ";C:\Program Files (x86)\Inno Setup 6"
+            echo $env:PATH
+      - run:
+          name: Build Windows Executable
+          command: |
+            cd build/filtered-resources
+            & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" kraken64.iss
+            Get-ChildItem -Recurse -Name "*.exe"
+      - persist_to_workspace:
+          root: .
+          paths:
+            - build/filtered-resources/Output/KrakenSetup.exe
+      - store_artifacts:
+          path: "build/filtered-resources/Output/KrakenSetup.exe"
+
+  deploy:
+    docker:
+      - image: cimg/openjdk:11.0.25
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Install MinIO Client
+          command: |
+            curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /tmp/mc
+            chmod +x /tmp/mc
+            sudo mv /tmp/mc /usr/local/bin/mc
+            mc --version
+      - run:
+          name: Configure MinIO Client
+          command: |
+            mc alias set s3 $MINIO_ENDPOINT $MINIO_ACCESS_KEY $MINIO_SECRET_KEY
+      - run:
+          name: Upload to MinIO
+          command: |
+            # Optionally update a "latest" version
+            mc cp build/filtered-resources/Output/KrakenSetup.exe s3/kraken-bootstrap-static/KrakenSetup.exe
+
 workflows:
   build-and-deploy:
     jobs:
-      - build-and-deploy:
+      - build-jar:
           context:
             - Kraken Env
+      - build-windows-exe:
+          requires:
+            - build-jar
+          context:
+            - Kraken Env
+      - deploy:
+          requires:
+            - build-jar
+            - build-windows-exe
+          context:
+            - Kraken Env
+          filters:
+            branches:
+              only:
+                - main
+                - master
