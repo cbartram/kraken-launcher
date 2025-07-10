@@ -117,7 +117,10 @@ Deployment for this is handled through InnoSetup to create a .exe installer. The
 - Run [InnoSetup](https://jrsoftware.org/isinfo.php)
 - Load the `kraken64.iss` file into InnoSetup from `/build/filtered-resources`
 - Click the play button to build `KrakenSetup.exe`
-- Upload `KrakenSetup.exe` to S3 and make sure the frontend is updated to pull the latest version down!
+- Upload `KrakenSetup.exe` to minio with: `mc cp ./KrakenSetup.exe s3/kraken-bootstrap-static/`
+- Rename `RuneLite.jar` to `kraken-launcher-x.x.x.jar` in the `build/libs` directory
+- Upload the Launcher Jar to minio with: `mc cp ./build/libs/kraken-launcher-x.x.x.jar s3/kraken-bootstrap-static/`
+- (Optional) Update the GitHub page with the latest release.
 
 ## Built With
 

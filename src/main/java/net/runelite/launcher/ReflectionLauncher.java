@@ -67,7 +67,7 @@ class ReflectionLauncher
 				// to load Kraken plugins
 				if(!Launcher.krakenData.rlMode) {
 					log.info("RuneLite mode: disabled. Loading Kraken Plugin class");
-					Class<?> krakenPluginMainClass = loader.loadClass("com.krakenplugins.KrakenLoaderPlugin");
+					Class<?> krakenPluginMainClass = loader.loadClass("com.krakenclient.KrakenLoaderPlugin");
 					Class<?> externalPluginManagerClass = loader.loadClass("net.runelite.client.externalplugins.ExternalPluginManager");
 					Method loadBuiltinMethod = externalPluginManagerClass.getMethod("loadBuiltin", Class[].class);
 					loadBuiltinMethod.invoke(null, (Object) new Class[]{krakenPluginMainClass});
