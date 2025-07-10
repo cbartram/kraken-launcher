@@ -11,8 +11,8 @@ ExtraDiskSpaceRequired=30000000
 ArchitecturesAllowed=x64
 PrivilegesRequired=lowest
 
-WizardSmallImageFile=..\..\innosetup\kraken_small.bmp
-SetupIconFile=..\..\innosetup\kraken.ico
+WizardSmallImageFile=${project.projectDir}\innosetup\kraken_small.bmp
+SetupIconFile=${project.projectDir}\innosetup\kraken.ico
 UninstallDisplayIcon={app}\RuneLite.exe
 
 Compression=lzma2
@@ -26,7 +26,7 @@ Name: DesktopIcon; Description: "Create a &desktop icon";
 
 [Files]
 ; only install kraken (RuneLite) .jar file. Dont mess with any RuneLite installs
-Source: "..\libs\RuneLite.jar"; DestDir: "{app}"
+Source: "${project.projectDir}\build\libs\RuneLite.jar"; DestDir: "{app}"
 
 [InstallDelete]
 ; previous shortcut
