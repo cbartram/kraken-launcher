@@ -15,7 +15,7 @@ import java.net.http.HttpResponse;
 @Data
 public class KrakenData {
     public static final boolean DEV = false;
-    public static final String KRAKEN_BOOTSTRAP = "https://minio-kraken.duckdns.org/kraken-bootstrap-static/bootstrap.json";
+    public static final String KRAKEN_BOOTSTRAP = "https://minio.kraken-plugins.com/kraken-bootstrap-static/bootstrap.json";
     public static final File KRAKEN_DIR;
     public static final String OUTDATED_MESSAGE_FALLBACK = "The Kraken client is currently offline. \n\nThis is likely due to RuneLite pushing a new client update that needs to be checked by the Kraken team before we can re-open the client. \n\nKeep an eye out on announcement channels in the discord for updates, and please do not message staff members asking why it does not load. \n\nIf you would like to run vanilla RuneLite from this launcher, set runelite mode in the runelite (configure) window or use the --rl arg.";
     private static KrakenBootstrap krakenBootstrap;

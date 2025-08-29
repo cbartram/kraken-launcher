@@ -3,7 +3,7 @@ AppName=Kraken Launcher
 AppPublisher=Kraken
 UninstallDisplayName=Kraken
 AppVersion=${project.version}
-AppSupportURL=https://kraken-plugins.duckdns.org/support
+AppSupportURL=https://kraken-plugins.com/support
 DefaultDirName={localappdata}\RuneLite
 
 ; ~30 mb for the repo the launcher downloads

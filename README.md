@@ -20,13 +20,13 @@
 
 This project is a modified fork of the [RuneLite launcher](https://github.com/runelite/launcher).
 
-Loads the latest version of the [Kraken Client](https://kraken-plugins.duckdns.org/download) from S3. This allows updates to be made to the Kraken client independently of user downloads.
-With this tool users no longer need to constantly download the newest version of the [Kraken Client](https://kraken-plugins.duckdns.org/download) to play the game. Instead, they can download
-this launcher JAR once, and it will automatically pull the latest [Kraken client](https://kraken-plugins.duckdns.org/download) from S3 for users.
+Loads the latest version of the [Kraken Client](https://kraken-plugins.com/download) from S3. This allows updates to be made to the Kraken client independently of user downloads.
+With this tool users no longer need to constantly download the newest version of the [Kraken Client](https://kraken-plugins.com/download) to play the game. Instead, they can download
+this launcher JAR once, and it will automatically pull the latest [Kraken client](https://kraken-plugins.com/download) from S3 for users.
 
 This should be the primary way users launch the game if they intend to use Kraken plugins.
 
-Currently, all plugins for the client are released for free at [our website here](https://kraken-plugins.duckdns.org). Some features this client offers are:
+Currently, all plugins for the client are released for free at [our website here](https://kraken-plugins.com). Some features this client offers are:
 
 - Discord authentication and sign up / sign in
 - Auto plugin loading (and automatic plugin & client updates)
@@ -48,13 +48,13 @@ For more information about the Kraken Client see: [Kraken Client](#about-kraken-
 # Current Plugins
 
 To view, download, and enable plugins,
-check out our website at [kraken-plugins.duckdns.org](https://kraken-plugins.duckdns.org/plugins)
+check out our website at [kraken-plugins.com](https://kraken-plugins.com/plugins)
 
 ## Installation
 
 Perform the following to install:
 - Download and install [RuneLite](https://runelite.net/) if you haven't already.
-- Download the `KrakenInstaller.exe` from [Kraken Plugins Website](https://kraken-plugins.duckdns.org/download).
+- Download the `KrakenInstaller.exe` from [Kraken Plugins Website](https://kraken-plugins.com/download).
 - Run the `KrakenInstaller.exe` file (you may have to click "More options" and trust the executable.
 - Run with `RuneLite.exe` or via jagex launcher (see [Jagex launcher details below](#jagex-launcher--jagex-accounts))
 
