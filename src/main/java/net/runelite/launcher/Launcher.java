@@ -199,7 +199,7 @@ public class Launcher {
 							.map(name -> new File(REPO_DIR, name))
 							.collect(Collectors.toList());
 					try {
-						ReflectionLauncher.launch(classpath, getClientArgs(settings));
+						ReflectionLauncher.launch(classpath, getClientArgs(settings), krakenData.getProxy());
 					} catch (Exception e) {
 						log.error("error launching client", e);
 					}
@@ -400,11 +400,10 @@ public class Launcher {
 			jvmParams.add("-XX:ErrorFile=" + CRASH_FILES.getAbsolutePath());
 			// Add VM args from cli/env
 			jvmParams.addAll(getJvmArgs(settings));
-
 				if (settings.launchMode == LaunchMode.REFLECT) {
 					log.info("Using launch mode: REFLECT");
-					log.info("ClassPath: {}, Args: {}", classpath, clientArgs);
-					ReflectionLauncher.launch(classpath, clientArgs);
+					log.info("Proxy: {} ClassPath: {}, Args: {}", krakenData.getProxy(), classpath, clientArgs);
+					ReflectionLauncher.launch(classpath, clientArgs, krakenData.getProxy());
 				} else if (settings.launchMode == LaunchMode.FORK || (settings.launchMode == LaunchMode.AUTO && ForkLauncher.canForkLaunch())) {
 					log.debug("Using launch mode: FORK");
 					ForkLauncher.launch(bootstrap, classpath, clientArgs, jvmProps, jvmParams);
