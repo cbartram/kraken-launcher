@@ -10,4 +10,5 @@ public class KrakenBootstrap {
     Artifact[] artifacts;
     String hash;
     String errorMessage;
+    String hookHash;
 }

@@ -949,7 +949,6 @@ public class Launcher {
 		parser.accepts("krakenprofile").withRequiredArg();
 		parser.accepts("maxmemory").withRequiredArg();
 		parser.accepts("rl");
-		parser.accepts("hBootstrap");
 	}
 
 	private static String parseVersion(String clientName) {
@@ -994,39 +993,6 @@ public class Launcher {
 		return bootstrap;
 	}
 
-	private static void patchBootstrapH(Bootstrap bootstrap) throws IOException {
-		KrakenBootstrap hBootstrap = KrakenData.getKrakenBootstrap(httpClient, true);
-		if (!Strings.isNullOrEmpty(hBootstrap.errorMessage)) {
-			SwingUtilities.invokeLater(() -> (new FatalErrorDialog(hBootstrap.errorMessage)).open());
-			throw new RuntimeException(hBootstrap.errorMessage);
-		}
-
-		List<Artifact> hArtifacts = new ArrayList<>(Arrays.asList(hBootstrap.getArtifacts()));
-		List<Artifact> rlArtifacts = new ArrayList<>(Arrays.asList(bootstrap.getArtifacts()));
-
-		Set<String> existingNames = new HashSet<>();
-		for (Artifact artifact : rlArtifacts) {
-			existingNames.add(artifact.getName());
-		}
-
-		// Add H dependencies that don't already exist in RuneLite
-		for (Artifact hArtifact : hArtifacts) {
-			if (!existingNames.contains(hArtifact.getName())) {
-				log.info("Adding H Artifact {} to bootstrap", hArtifact.getName());
-				rlArtifacts.add(hArtifact);
-			} else {
-				log.info(hArtifact.getName() + " already exists in the bootstrap");
-			}
-		}
-
-		log.info("------------------------ Final bootstrap ---------------------------");
-		for (Artifact artifact : rlArtifacts) {
-			log.info(artifact.getName());
-		}
-		bootstrap.setArtifacts(rlArtifacts.toArray(Artifact[]::new));
-
-	}
-
 	private static boolean checkInjectedVersion(List<Artifact> artifacts) throws IOException {
 		if (krakenData.rlMode || krakenData.skipUpdatedClientCheck) {
 			return true;
@@ -1035,14 +1001,26 @@ public class Launcher {
 			if (injectedClient == null) {
 				return false;
 			} else {
+                Artifact hook = artifacts.stream().filter((a) -> a.getName().contains("rlicn-")).findFirst().orElse(null);
+                if(hook == null) {
+                    SwingUtilities.invokeLater(() -> (new FatalErrorDialog("The Kraken Client is currently offline. (RLICN artifact missing) \n\nThis is likely due to RuneLite pushing a new client update that needs to be checked by the Kraken team to ensure it keeps the client safe and undetected. \n\nIf you would like to run vanilla RuneLite from this launcher, set runelite mode in the runelite (configure) window or use the --rl arg or skip this message AT YOUR OWN RISK by checking the \"Skip RuneLite Update Check\" checkbox.")).open());
+                    return false;
+                }
+
 				KrakenBootstrap bootstrap = KrakenData.getKrakenBootstrap(httpClient, false);
 				log.info("bootstrap hash: {} injected client hash: {}", bootstrap.getHash(), injectedClient.getHash());
 				if (!bootstrap.getHash().equalsIgnoreCase(injectedClient.getHash())) {
 					SwingUtilities.invokeLater(() -> (new FatalErrorDialog("The Kraken Client is currently offline. (injected version mismatch) \n\nThis is likely due to RuneLite pushing a new client update that needs to be checked by the Kraken team to ensure it keeps the client safe and undetected. \n\nIf you would like to run vanilla RuneLite from this launcher, set runelite mode in the runelite (configure) window or use the --rl arg or skip this message AT YOUR OWN RISK by checking the \"Skip RuneLite Update Check\" checkbox.")).open());
 					return false;
-				} else {
-					return true;
-				}
+
+                // If RuneLite tries to change anything with regards to these DLL hooks we should fail the client startup
+                // as something fishy is going on
+                } else if (bootstrap.getHookHash() != null && bootstrap.getHookHash().equalsIgnoreCase(hook.getHash())) {
+                    return true;
+                }
+
+                SwingUtilities.invokeLater(() -> (new FatalErrorDialog("The Kraken Client is currently offline. (RLICN hash mismatch) \n\nThis is likely due to RuneLite pushing a new client update that needs to be checked by the Kraken team to ensure it keeps the client safe and undetected. \n\nIf you would like to run vanilla RuneLite from this launcher, set runelite mode in the runelite (configure) window or use the --rl arg or skip this message AT YOUR OWN RISK by checking the \"Skip RuneLite Update Check\" checkbox.")).open());
+                return false;
 			}
 		}
 	}
