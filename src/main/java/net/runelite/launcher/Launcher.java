@@ -951,8 +951,8 @@ public class Launcher {
 		parser.accepts("rl");
 	}
 
-	private static String parseVersion(String clientName) {
-		String regex = "kraken-client-(\\d+\\.\\d+\\.\\d+)\\.jar";
+	private static String parseVersion(String clientName, String prefix) {
+		String regex = prefix + "(\\d+\\.\\d+\\.\\d+)\\.jar";
 		Pattern pattern = Pattern.compile(regex);
 		Matcher matcher = pattern.matcher(clientName);
 
@@ -978,8 +978,12 @@ public class Launcher {
 				for(Artifact a: krakenArtifacts) {
 					if(a.getName().toLowerCase().startsWith("kraken-client-")) {
 						// Parse version from kraken-client
-						System.setProperty("kraken-client-version", parseVersion(a.getName().toLowerCase()));
+						System.setProperty("kraken-client-version", parseVersion(a.getName().toLowerCase(), "kraken-client-"));
 					}
+
+                    if(a.getName().toLowerCase().startsWith("kraken-api-")) {
+                        System.setProperty("kraken-api-version", parseVersion(a.getName().toLowerCase(),  "kraken-api-"));
+                    }
 				}
 
 				List<Artifact> rlArtifacts = new ArrayList<>(Arrays.asList(bootstrap.getArtifacts()));
