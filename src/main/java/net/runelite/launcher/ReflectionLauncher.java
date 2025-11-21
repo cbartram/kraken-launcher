@@ -48,7 +48,7 @@ class ReflectionLauncher {
 
                 // Before we invoke the main class, check to see if RuneLite mode is disabled. If so we are clear
                 // to load Kraken plugins
-                if(!Launcher.krakenData.rlMode) {
+                if(!Launcher.BOOTSTRAP_DOWNLOADER.rlMode) {
                     log.info("RuneLite mode: disabled. Loading Kraken Plugin class");
                     Class<?> krakenPluginMainClass = loader.loadClass("com.krakenclient.KrakenLoaderPlugin");
                     Class<?> externalPluginManagerClass = loader.loadClass("net.runelite.client.externalplugins.ExternalPluginManager");

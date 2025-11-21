@@ -14,7 +14,7 @@ import java.nio.file.StandardCopyOption;
 
 import static net.runelite.launcher.Launcher.RUNELITE_DIR;
 
-public class KrakenPersistentSettings {
+public class PersistedPreferences {
     private static final String KRAKEN_SETTINGS = "krakenprefs.json";
     boolean rlMode = false;
     boolean skipUpdatedClientCheck = false;
@@ -23,53 +23,53 @@ public class KrakenPersistentSettings {
 
     void apply(OptionSet options) {
         if (options.has("rl")) {
-            this.rlMode = Launcher.krakenData.rlMode = true;
+            this.rlMode = Launcher.BOOTSTRAP_DOWNLOADER.rlMode = true;
         } else {
-            Launcher.krakenData.rlMode = this.rlMode;
+            Launcher.BOOTSTRAP_DOWNLOADER.rlMode = this.rlMode;
         }
 
         if (options.has("skipUpdatedClientCheck")) {
-            this.skipUpdatedClientCheck = Launcher.krakenData.skipUpdatedClientCheck = true;
+            this.skipUpdatedClientCheck = Launcher.BOOTSTRAP_DOWNLOADER.skipUpdatedClientCheck = true;
         } else {
-            Launcher.krakenData.skipUpdatedClientCheck = this.skipUpdatedClientCheck;
+            Launcher.BOOTSTRAP_DOWNLOADER.skipUpdatedClientCheck = this.skipUpdatedClientCheck;
         }
 
         if (options.has("proxy")) {
-            this.proxy = Launcher.krakenData.proxy = String.valueOf(options.valueOf("proxy"));
+            this.proxy = Launcher.BOOTSTRAP_DOWNLOADER.proxy = String.valueOf(options.valueOf("proxy"));
         } else {
-            Launcher.krakenData.proxy = this.proxy;
+            Launcher.BOOTSTRAP_DOWNLOADER.proxy = this.proxy;
         }
 
         if (options.has("maxmemory")) {
-            this.maxMem = Launcher.krakenData.maxMemory = String.valueOf(options.valueOf("maxmemory"));
+            this.maxMem = Launcher.BOOTSTRAP_DOWNLOADER.maxMemory = String.valueOf(options.valueOf("maxmemory"));
         } else {
-            Launcher.krakenData.maxMemory = this.maxMem;
+            Launcher.BOOTSTRAP_DOWNLOADER.maxMemory = this.maxMem;
         }
 
         if (options.has("krakenprofile")) {
-            Launcher.krakenData.krakenProfile = String.valueOf(options.valueOf("krakenprofile"));
+            Launcher.BOOTSTRAP_DOWNLOADER.krakenProfile = String.valueOf(options.valueOf("krakenprofile"));
         }
 
         if (options.has("remote-debug")) {
-            Launcher.krakenData.startDebugger = true;
+            Launcher.BOOTSTRAP_DOWNLOADER.startDebugger = true;
         }
 
     }
 
-    static KrakenPersistentSettings loadSettings() {
+    static PersistedPreferences loadSettings() {
         File settingsFile = new File(RUNELITE_DIR, "kraken/krakenprefs.json");
 
         try (InputStreamReader in = new InputStreamReader(new FileInputStream(settingsFile), StandardCharsets.UTF_8)) {
-            KrakenPersistentSettings settings = new Gson().fromJson(in, KrakenPersistentSettings.class);
-            return MoreObjects.firstNonNull(settings, new KrakenPersistentSettings());
+            PersistedPreferences settings = new Gson().fromJson(in, PersistedPreferences.class);
+            return MoreObjects.firstNonNull(settings, new PersistedPreferences());
         } catch (JsonParseException | IOException var6) {
-            KrakenPersistentSettings launcherSettings = new KrakenPersistentSettings();
+            PersistedPreferences launcherSettings = new PersistedPreferences();
             saveSettings(launcherSettings);
             return launcherSettings;
         }
     }
 
-    static void saveSettings(KrakenPersistentSettings settings) {
+    static void saveSettings(PersistedPreferences settings) {
         File krakenDir = new File(RUNELITE_DIR, "kraken");
 
         if(!krakenDir.exists()) {

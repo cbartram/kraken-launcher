@@ -35,7 +35,7 @@ public class ConfigurationFrame extends JFrame
     private final JComboBox<HardwareAccelerationMode> comboHardwareAccelMode;
     private final JComboBox<LaunchMode> comboLaunchMode;
 
-    private ConfigurationFrame(LauncherSettings settings, KrakenPersistentSettings krakenSettings)
+    private ConfigurationFrame(LauncherSettings settings, PersistedPreferences krakenSettings)
     {
         setTitle("RuneLite Launcher Configuration");
 
@@ -294,13 +294,13 @@ public class ConfigurationFrame extends JFrame
         return checkbox;
     }
 
-    private JCheckBox addRuneLiteCheckbox(JPanel topPanel, KrakenPersistentSettings settings) {
+    private JCheckBox addRuneLiteCheckbox(JPanel topPanel, PersistedPreferences settings) {
         JCheckBox box = checkbox("RuneLite mode", "Excludes all the Kraken additions", Boolean.TRUE.equals(settings.rlMode));
         topPanel.add(box);
         return box;
     }
 
-    private JCheckBox addSkipClientUpdateCheckCheckbox(JPanel topPanel, KrakenPersistentSettings settings) {
+    private JCheckBox addSkipClientUpdateCheckCheckbox(JPanel topPanel, PersistedPreferences settings) {
         JCheckBox box = checkbox("Skip RuneLite Update check", "Skips security checks when new RuneLite clients are released.", Boolean.TRUE.equals(settings.skipUpdatedClientCheck));
         topPanel.add(box);
         return box;
@@ -315,18 +315,18 @@ public class ConfigurationFrame extends JFrame
 
     static void open()
     {
-        new ConfigurationFrame(LauncherSettings.loadSettings(), KrakenPersistentSettings.loadSettings())
+        new ConfigurationFrame(LauncherSettings.loadSettings(), PersistedPreferences.loadSettings())
                 .setVisible(true);
     }
 
-    private JTextField addProxyText(JPanel panel, KrakenPersistentSettings settings) {
+    private JTextField addProxyText(JPanel panel, PersistedPreferences settings) {
         panel.add(label("Proxy", "Proxy to load the client with."));
         JTextField textField = field(settings.proxy);
         panel.add(textField);
         return textField;
     }
 
-    private JTextField addMaxMemText(JPanel panel, KrakenPersistentSettings settings) {
+    private JTextField addMaxMemText(JPanel panel, PersistedPreferences settings) {
         panel.add(label("Max Memory", "Amount of memory to load the client with"));
         JTextField textField = field(settings.maxMem);
         panel.add(textField);
@@ -334,12 +334,12 @@ public class ConfigurationFrame extends JFrame
     }
 
     private void applyKrakenSettings() {
-        KrakenPersistentSettings settings = KrakenPersistentSettings.loadSettings();
+        PersistedPreferences settings = PersistedPreferences.loadSettings();
         settings.skipUpdatedClientCheck = this.chkBoxSkipClientUpdateCheck.isSelected();
         settings.rlMode = this.chkboxRl.isSelected();
         settings.proxy = this.txtProxy.getText();
         settings.maxMem = this.txtMaxMem.getText();
-        KrakenPersistentSettings.saveSettings(settings);
+        PersistedPreferences.saveSettings(settings);
     }
 
     public static void main(String[] args)

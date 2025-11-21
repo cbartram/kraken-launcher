@@ -76,7 +76,7 @@ public class Launcher {
 	static final String LAUNCHER_EXECUTABLE_NAME_WIN = "RuneLite.exe";
 	static final String LAUNCHER_EXECUTABLE_NAME_OSX = "RuneLite";
 	static boolean nativesLoaded;
-	static final KrakenData krakenData = new KrakenData();
+	static final BootstrapDownloader BOOTSTRAP_DOWNLOADER = new BootstrapDownloader();
 
 	private static HttpClient httpClient;
 
@@ -171,7 +171,7 @@ public class Launcher {
 			// Loads settings from the file at {RUNELITE_DIR}/kraken/krakenprefs.json
 			// If any options were specified via CLI those take preference over krakenprefs.json else
 			// it will use whatever was specified when --configure was run.
-			KrakenPersistentSettings krakenSettings = KrakenPersistentSettings.loadSettings();
+			PersistedPreferences krakenSettings = PersistedPreferences.loadSettings();
 			settings.apply(options);
 			krakenSettings.apply(options);
 			final boolean postInstall = options.has("postinstall");
@@ -199,7 +199,7 @@ public class Launcher {
 							.map(name -> new File(REPO_DIR, name))
 							.collect(Collectors.toList());
 					try {
-						ReflectionLauncher.launch(classpath, getClientArgs(settings), krakenData.getProxy());
+						ReflectionLauncher.launch(classpath, getClientArgs(settings), BOOTSTRAP_DOWNLOADER.getProxy());
 					} catch (Exception e) {
 						log.error("error launching client", e);
 					}
@@ -402,8 +402,8 @@ public class Launcher {
 			jvmParams.addAll(getJvmArgs(settings));
 				if (settings.launchMode == LaunchMode.REFLECT) {
 					log.info("Using launch mode: REFLECT");
-					log.info("Proxy: {} ClassPath: {}, Args: {}", krakenData.getProxy(), classpath, clientArgs);
-					ReflectionLauncher.launch(classpath, clientArgs, krakenData.getProxy());
+					log.info("Proxy: {} ClassPath: {}, Args: {}", BOOTSTRAP_DOWNLOADER.getProxy(), classpath, clientArgs);
+					ReflectionLauncher.launch(classpath, clientArgs, BOOTSTRAP_DOWNLOADER.getProxy());
 				} else if (settings.launchMode == LaunchMode.FORK || (settings.launchMode == LaunchMode.AUTO && ForkLauncher.canForkLaunch())) {
 					log.debug("Using launch mode: FORK");
 					ForkLauncher.launch(bootstrap, classpath, clientArgs, jvmProps, jvmParams);
@@ -965,14 +965,14 @@ public class Launcher {
 	}
 
 	private static Bootstrap patchBootstrapKraken(Bootstrap bootstrap) throws IOException {
-		if (!krakenData.rlMode) {
-			KrakenBootstrap krakenBootstrap = KrakenData.getKrakenBootstrap(httpClient, false);
-			if (!Strings.isNullOrEmpty(krakenBootstrap.errorMessage)) {
-				SwingUtilities.invokeLater(() -> (new FatalErrorDialog(krakenBootstrap.errorMessage)).open());
-				throw new RuntimeException(krakenBootstrap.errorMessage);
+		if (!BOOTSTRAP_DOWNLOADER.rlMode) {
+			BootstrapDependency bootstrapDependency = BootstrapDownloader.getBootstrapDependency(httpClient, false);
+			if (!Strings.isNullOrEmpty(bootstrapDependency.errorMessage)) {
+				SwingUtilities.invokeLater(() -> (new FatalErrorDialog(bootstrapDependency.errorMessage)).open());
+				throw new RuntimeException(bootstrapDependency.errorMessage);
 			} else {
 				log.info("patching bootstrap with Kraken dependencies");
-				List<Artifact> krakenArtifacts = new ArrayList<>(Arrays.asList(krakenBootstrap.getArtifacts()));
+				List<Artifact> krakenArtifacts = new ArrayList<>(Arrays.asList(bootstrapDependency.getArtifacts()));
 
 				// Set system property for the client version
 				for(Artifact a: krakenArtifacts) {
@@ -998,7 +998,7 @@ public class Launcher {
 	}
 
 	private static boolean checkInjectedVersion(List<Artifact> artifacts) throws IOException {
-		if (krakenData.rlMode || krakenData.skipUpdatedClientCheck) {
+		if (BOOTSTRAP_DOWNLOADER.rlMode || BOOTSTRAP_DOWNLOADER.skipUpdatedClientCheck) {
 			return true;
 		} else {
 			Artifact injectedClient = artifacts.stream().filter((a) -> a.getName().contains("injected-client")).findFirst().orElse(null);
@@ -1011,7 +1011,7 @@ public class Launcher {
                     return false;
                 }
 
-				KrakenBootstrap bootstrap = KrakenData.getKrakenBootstrap(httpClient, false);
+				BootstrapDependency bootstrap = BootstrapDownloader.getBootstrapDependency(httpClient, false);
 				log.info("bootstrap hash: {} injected client hash: {}", bootstrap.getHash(), injectedClient.getHash());
 				if (!bootstrap.getHash().equalsIgnoreCase(injectedClient.getHash())) {
 					SwingUtilities.invokeLater(() -> (new FatalErrorDialog("The Kraken Client is currently offline. (injected version mismatch) \n\nThis is likely due to RuneLite pushing a new client update that needs to be checked by the Kraken team to ensure it keeps the client safe and undetected. \n\nIf you would like to run vanilla RuneLite from this launcher, set runelite mode in the runelite (configure) window or use the --rl arg or skip this message AT YOUR OWN RISK by checking the \"Skip RuneLite Update Check\" checkbox.")).open());
