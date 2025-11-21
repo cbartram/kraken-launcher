@@ -6,7 +6,7 @@ import net.runelite.launcher.beans.Artifact;
 
 @Data
 @NoArgsConstructor
-public class BootstrapDependency {
+public class BootstrapDependencies {
     Artifact[] artifacts;
     String hash;
     String errorMessage;

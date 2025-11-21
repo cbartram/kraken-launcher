@@ -13,11 +13,11 @@ import java.util.List;
 @Slf4j
 class ReflectionLauncher {
 
-    static void launch(List<File> classpath, Collection<String> clientArgs) throws MalformedURLException {
-        launch(classpath, clientArgs, "");
+    static void launch(BootstrapDownloader downloader, List<File> classpath, Collection<String> clientArgs) throws MalformedURLException {
+        launch(downloader, classpath, clientArgs, "");
     }
 
-    static void launch(List<File> classpath, Collection<String> clientArgs, String proxyString) throws MalformedURLException {
+    static void launch(BootstrapDownloader downloader, List<File> classpath, Collection<String> clientArgs, String proxyString) throws MalformedURLException {
         clientArgs.add("--insecure-write-credentials");
         clientArgs.add("--developer-mode");
 
@@ -48,7 +48,7 @@ class ReflectionLauncher {
 
                 // Before we invoke the main class, check to see if RuneLite mode is disabled. If so we are clear
                 // to load Kraken plugins
-                if(!Launcher.BOOTSTRAP_DOWNLOADER.rlMode) {
+                if(!downloader.getPreferences().isRlMode()) {
                     log.info("RuneLite mode: disabled. Loading Kraken Plugin class");
                     Class<?> krakenPluginMainClass = loader.loadClass("com.krakenclient.KrakenLoaderPlugin");
                     Class<?> externalPluginManagerClass = loader.loadClass("net.runelite.client.externalplugins.ExternalPluginManager");

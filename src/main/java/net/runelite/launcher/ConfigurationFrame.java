@@ -295,13 +295,13 @@ public class ConfigurationFrame extends JFrame
     }
 
     private JCheckBox addRuneLiteCheckbox(JPanel topPanel, PersistedPreferences settings) {
-        JCheckBox box = checkbox("RuneLite mode", "Excludes all the Kraken additions", Boolean.TRUE.equals(settings.rlMode));
+        JCheckBox box = checkbox("RuneLite mode", "Excludes all the Kraken additions", settings.isRlMode());
         topPanel.add(box);
         return box;
     }
 
     private JCheckBox addSkipClientUpdateCheckCheckbox(JPanel topPanel, PersistedPreferences settings) {
-        JCheckBox box = checkbox("Skip RuneLite Update check", "Skips security checks when new RuneLite clients are released.", Boolean.TRUE.equals(settings.skipUpdatedClientCheck));
+        JCheckBox box = checkbox("Skip RuneLite Update check", "Skips security checks when new RuneLite clients are released.", settings.isSkipUpdatedClientCheck());
         topPanel.add(box);
         return box;
     }
@@ -321,24 +321,24 @@ public class ConfigurationFrame extends JFrame
 
     private JTextField addProxyText(JPanel panel, PersistedPreferences settings) {
         panel.add(label("Proxy", "Proxy to load the client with."));
-        JTextField textField = field(settings.proxy);
+        JTextField textField = field(settings.getProxy());
         panel.add(textField);
         return textField;
     }
 
     private JTextField addMaxMemText(JPanel panel, PersistedPreferences settings) {
         panel.add(label("Max Memory", "Amount of memory to load the client with"));
-        JTextField textField = field(settings.maxMem);
+        JTextField textField = field(settings.getMaxMem());
         panel.add(textField);
         return textField;
     }
 
     private void applyKrakenSettings() {
         PersistedPreferences settings = PersistedPreferences.loadSettings();
-        settings.skipUpdatedClientCheck = this.chkBoxSkipClientUpdateCheck.isSelected();
-        settings.rlMode = this.chkboxRl.isSelected();
-        settings.proxy = this.txtProxy.getText();
-        settings.maxMem = this.txtMaxMem.getText();
+        settings.setSkipUpdatedClientCheck(this.chkBoxSkipClientUpdateCheck.isSelected());
+        settings.setRlMode(this.chkboxRl.isSelected());
+        settings.setProxy(this.txtProxy.getText());
+        settings.setMaxMem(this.txtMaxMem.getText());
         PersistedPreferences.saveSettings(settings);
     }
 

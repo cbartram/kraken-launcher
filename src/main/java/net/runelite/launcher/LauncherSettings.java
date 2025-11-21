@@ -28,13 +28,14 @@ import com.google.common.base.MoreObjects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import joptsimple.OptionSet;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.helpers.MessageFormatter;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -43,12 +44,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import joptsimple.OptionSet;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import org.slf4j.helpers.MessageFormatter;
 
 @Data
 @Slf4j
@@ -75,7 +70,7 @@ class LauncherSettings
 	LaunchMode launchMode = LaunchMode.AUTO;
 
 	// override settings with options from cli
-	void apply(OptionSet options)
+	void merge(OptionSet options)
 	{
 		if (options.has("debug"))
 		{
