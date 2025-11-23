@@ -1,9 +1,0 @@
-[Desktop Entry]
-Name=${project.finalName}
-Comment=${project.launcherDescription}
-Exec=${project.finalName}
-Icon=runelite
-Terminal=false
-Type=Application
-Categories=Game;
-StartupWMClass=net-runelite-launcher-Launcher
