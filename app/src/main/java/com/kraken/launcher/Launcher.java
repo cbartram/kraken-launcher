@@ -4,7 +4,6 @@ import com.kraken.launcher.bootstrap.BootstrapDownloader;
 import com.kraken.launcher.bootstrap.model.Artifact;
 import com.kraken.launcher.bootstrap.model.Bootstrap;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.RuneLite;
 import net.runelite.client.ui.FatalErrorDialog;
 
 import javax.inject.Inject;
@@ -23,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Hijacks the RuneLite launcher to inject custom client code.
  */
+// TODO Set client and API system properties for the plugin to pickup and display on UI
 @Slf4j
 public class Launcher {
 
@@ -47,15 +47,16 @@ public class Launcher {
     /**
      * Starts the hijack process asynchronously.
      */
-    public void start() {
+    public boolean start() {
         try {
             bootstrapDownloader.downloadKrakenBootstrap();
             bootstrapDownloader.downloadRuneLiteBootstrap();
         } catch (IOException e) {
             log.error("Error fetching one of the bootstrap files, shutting down: ", e);
-            return;
+            return false;
         }
         executorService.submit(this::patchLauncher);
+        return true;
     }
 
     /**
@@ -102,8 +103,6 @@ public class Launcher {
             URL launcherJarUrl = resolveJarUrl();
 
             addUrlToClassLoader(urlClassLoader, launcherJarUrl);
-            log.info("Added Kraken Launcher JAR to ClassLoader: {}", launcherJarUrl);
-
             for(Artifact artifact : bootstrapDownloader.getKrakenBootstrap().getArtifacts()) {
                 log.info("Adding to CP: {}", artifact.getName());
                 addUrlToClassLoader(urlClassLoader, new URL(artifact.getPath()));
@@ -112,18 +111,40 @@ public class Launcher {
             // Wait for the RuneLite injector to be created by Guice.
             // Once created it can be used to load the Kraken Client plugin
             new Thread(() -> {
-                while(RuneLite.getInjector() == null) {
-                    try {
-                        Thread.sleep(25);
-                    } catch(Exception ex) {
-                        log.error(ex.getMessage(), ex);
-                    }
-                }
                 try {
+                    Class<?> runeLiteClass = urlClassLoader.loadClass("net.runelite.client.RuneLite");
+                    Method getInjectorMethod = runeLiteClass.getDeclaredMethod("getInjector");
+
+                    Object injector = null;
+                    while (injector == null) {
+                        injector = getInjectorMethod.invoke(null);
+                        if (injector == null) {
+                            try {
+                                Thread.sleep(25);
+                            } catch (InterruptedException ex) {
+                                Thread.currentThread().interrupt();
+                                return;
+                            }
+                        }
+                    }
+
+                    Class<?> watcherClass = urlClassLoader.loadClass("com.kraken.launcher.ClientWatcher");
                     Class<?> krakenPluginMainClass = urlClassLoader.loadClass("com.krakenclient.KrakenLoaderPlugin");
-                    RuneLite.getInjector().getInstance(ClientWatcher.class).start(krakenPluginMainClass);
+
+                    // Load the Injector INTERFACE to avoid IllegalAccessException on the internal Impl class
+                    Class<?> injectorInterface = urlClassLoader.loadClass("com.google.inject.Injector");
+                    Method getInstanceMethod = injectorInterface.getMethod("getInstance", Class.class);
+                    Object watcherInstance = getInstanceMethod.invoke(injector, watcherClass);
+
+
+                    // Start the watcher
+                    Method startMethod = watcherClass.getMethod("start", Class.class);
+                    startMethod.invoke(watcherInstance, krakenPluginMainClass);
+                    log.info("Kraken Client injected successfully.");
                 } catch (ClassNotFoundException e) {
-                    log.error("Kraken plugin class: com.krakenclient.KrakenLoaderPlugin not found: ", e);
+                    log.error("Class not found during injection (Check classpath/bootstrap): ", e);
+                } catch (Exception e) {
+                    log.error("Reflection error during injection: ", e);
                 }
             }).start();
         } catch (InterruptedException e) {
@@ -239,7 +260,12 @@ public class Launcher {
         System.setProperty("runelite.launcher.reflect", "true");
 
         Launcher launcher = new Launcher(new BootstrapDownloader());
-        launcher.start();
+
+        if(!launcher.start()) {
+            log.info("Kraken Launcher failed to start, see error messages above.");
+            return;
+        }
+
         try {
             Class<?> launcherClass = Class.forName(LAUNCHER_CLASS);
             launcherClass.getMethod("main", String[].class).invoke(null, (Object) args);
