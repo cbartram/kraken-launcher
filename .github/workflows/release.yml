@@ -34,9 +34,9 @@ jobs:
       - name: List Build Artifacts (Debugging)
         run: |
           echo "Listing Libs:"
-          ls -R build/libs
+          ls -R app/build/libs
           echo "Listing Launch4j:"
-          ls -R build/launch4j
+          ls -R app/build/launch4j
 
       - name: Install MinIO Client
         run: |
@@ -51,8 +51,8 @@ jobs:
 
       - name: Upload to MinIO
         run: |
-          JAR_FILE=$(find build/libs -name "*-fat.jar" | head -n 1)
-          EXE_FILE="build/launch4j/KrakenInstaller.exe"
+          JAR_FILE=$(find app/build/libs -name "*-fat.jar" | head -n 1)
+          EXE_FILE="app/build/launch4j/KrakenInstaller.exe"
           
           echo "Found Jar: $JAR_FILE"
           echo "Found Exe: $EXE_FILE"
