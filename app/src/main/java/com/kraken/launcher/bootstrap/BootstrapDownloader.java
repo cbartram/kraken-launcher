@@ -33,24 +33,20 @@ public class BootstrapDownloader {
      * @param cached Currently cached bootstrap (may be null)
      * @return Bootstrap object or null if download fails
      */
-    private Bootstrap downloadBootstrap(String url, Bootstrap cached) {
+    private Bootstrap downloadBootstrap(String url, Bootstrap cached) throws IOException {
         if (cached != null) return cached;
-
-        try {
-            String bootstrap = fetchBootstrap(url);
-            return bootstrap != null ? gson.fromJson(bootstrap, Bootstrap.class) : null;
-        } catch (IOException e) {
-            log.error("Failed to download bootstrap from url: ", e);
-            return null;
-        }
+        String bootstrap = fetchBootstrap(url);
+        return bootstrap != null ? gson.fromJson(bootstrap, Bootstrap.class) : null;
     }
 
-    public Bootstrap downloadKrakenBootstrap() {
-        return krakenBootstrap = downloadBootstrap(KRAKEN_BOOTSTRAP, krakenBootstrap);
+    public void downloadKrakenBootstrap() throws IOException {
+        log.info("Downloading Kraken Bootstrap from URL: {}", KRAKEN_BOOTSTRAP);
+        krakenBootstrap = downloadBootstrap(KRAKEN_BOOTSTRAP, krakenBootstrap);
     }
 
-    public Bootstrap downloadRuneLiteBootstrap() {
-        return runeliteBootstrap = downloadBootstrap(RUNELITE_BOOTSTRAP, runeliteBootstrap);
+    public void downloadRuneLiteBootstrap() throws IOException {
+        log.info("Downloading RuneLite Bootstrap from URL: {}", RUNELITE_BOOTSTRAP);
+        runeliteBootstrap = downloadBootstrap(RUNELITE_BOOTSTRAP, runeliteBootstrap);
     }
 
     private String fetchBootstrap(String url) throws IOException {

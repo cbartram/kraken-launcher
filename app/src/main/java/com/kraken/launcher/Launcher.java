@@ -1,7 +1,5 @@
 package com.kraken.launcher;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.kraken.launcher.bootstrap.BootstrapDownloader;
 import com.kraken.launcher.bootstrap.model.Artifact;
 import com.kraken.launcher.bootstrap.model.Bootstrap;
@@ -11,6 +9,7 @@ import net.runelite.client.ui.FatalErrorDialog;
 
 import javax.inject.Inject;
 import javax.swing.*;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
@@ -37,8 +36,6 @@ public class Launcher {
 
     @Inject
     public Launcher(BootstrapDownloader downloader) {
-        downloader.downloadKrakenBootstrap();
-        downloader.downloadRuneLiteBootstrap();
         this.bootstrapDownloader = downloader;
         this.executorService = Executors.newSingleThreadExecutor(r -> {
             Thread thread = new Thread(r, "com.kraken.launcher.patcher");
@@ -51,6 +48,13 @@ public class Launcher {
      * Starts the hijack process asynchronously.
      */
     public void start() {
+        try {
+            bootstrapDownloader.downloadKrakenBootstrap();
+            bootstrapDownloader.downloadRuneLiteBootstrap();
+        } catch (IOException e) {
+            log.error("Error fetching one of the bootstrap files, shutting down: ", e);
+            return;
+        }
         executorService.submit(this::patchLauncher);
     }
 
@@ -88,21 +92,20 @@ public class Launcher {
 
         try {
             ClassLoader classLoader = waitForRuneLiteClassLoader();
-            log.debug("RuneLite classLoader located: {}", classLoader.getName());
+            log.info("RuneLite classLoader located");
 
-            // Injects the hijacked client into the RuneLite ClassLoader.
             if (!(classLoader instanceof URLClassLoader)) {
                 throw new IllegalStateException("ClassLoader is not a URLClassLoader");
             }
 
             URLClassLoader urlClassLoader = (URLClassLoader) classLoader;
-            URL hijackJarUrl = resolveHijackJarUrl();
+            URL launcherJarUrl = resolveJarUrl();
 
-            addUrlToClassLoader(urlClassLoader, hijackJarUrl);
-            log.info("Added hijack JAR to ClassLoader: {}", hijackJarUrl);
+            addUrlToClassLoader(urlClassLoader, launcherJarUrl);
+            log.info("Added Kraken Launcher JAR to ClassLoader: {}", launcherJarUrl);
 
             for(Artifact artifact : bootstrapDownloader.getKrakenBootstrap().getArtifacts()) {
-                log.info("Adding: {}", artifact.getName());
+                log.info("Adding to CP: {}", artifact.getName());
                 addUrlToClassLoader(urlClassLoader, new URL(artifact.getPath()));
             }
 
@@ -120,14 +123,14 @@ public class Launcher {
                     Class<?> krakenPluginMainClass = urlClassLoader.loadClass("com.krakenclient.KrakenLoaderPlugin");
                     RuneLite.getInjector().getInstance(ClientWatcher.class).start(krakenPluginMainClass);
                 } catch (ClassNotFoundException e) {
-                    log.error("Kraken plugin class: com.krakenclient.KrakenLoaderPlugin not found.", e);
+                    log.error("Kraken plugin class: com.krakenclient.KrakenLoaderPlugin not found: ", e);
                 }
             }).start();
         } catch (InterruptedException e) {
-            log.warn("Hijack process interrupted", e);
+            log.warn("Client patching process interrupted: ", e);
             Thread.currentThread().interrupt();
         } catch (Exception e) {
-            log.error("Failed to hijack launcher", e);
+            log.error("Failed to patch RuneLite client: ", e);
         }
     }
 
@@ -187,9 +190,12 @@ public class Launcher {
     private ClassLoader waitForRuneLiteClassLoader() throws InterruptedException {
         while (!Thread.currentThread().isInterrupted()) {
             ClassLoader classLoader = (ClassLoader) UIManager.get("ClassLoader");
-
-            if (classLoader != null && isRuneLiteClassLoader(classLoader)) {
-                return classLoader;
+            if(classLoader != null) {
+                for (Package pack : classLoader.getDefinedPackages()) {
+                    if (pack.getName().equals(RUNELITE_PACKAGE)) {
+                        return classLoader;
+                    }
+                }
             }
 
             Thread.sleep(Launcher.CLASSLOADER_POLL_INTERVAL_MS);
@@ -198,22 +204,9 @@ public class Launcher {
     }
 
     /**
-     * Checks if the given ClassLoader contains RuneLite packages.
+     * Resolves the URL of the Kraken launcher JAR file.
      */
-    private boolean isRuneLiteClassLoader(ClassLoader classLoader) {
-        for (Package pack : classLoader.getDefinedPackages()) {
-            log.info("Classloader package name: {}", pack.getName());
-            if (pack.getName().equals(RUNELITE_PACKAGE)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Resolves the URL of the hijack JAR file.
-     */
-    private URL resolveHijackJarUrl() throws Exception {
+    private URL resolveJarUrl() throws Exception {
         URI uri = Launcher.class.getProtectionDomain()
                 .getCodeSource()
                 .getLocation()
@@ -224,7 +217,7 @@ public class Launcher {
         }
 
         if (!uri.getPath().endsWith(".jar")) {
-            uri = uri.resolve("RuneLiteHijack.jar");
+            uri = uri.resolve("kraken-launcher-1.0.0-fat.jar");
         }
 
         return uri.toURL();
@@ -241,22 +234,21 @@ public class Launcher {
 
 
     public static void main(String[] args) {
-        Injector injector = Guice.createInjector();
+        log.info("Starting Kraken Launcher");
         System.setProperty("runelite.launcher.nojvm", "true");
         System.setProperty("runelite.launcher.reflect", "true");
 
-        Launcher krakenLauncher = injector.getInstance(Launcher.class);
-
+        Launcher launcher = new Launcher(new BootstrapDownloader());
+        launcher.start();
         try {
             Class<?> launcherClass = Class.forName(LAUNCHER_CLASS);
             launcherClass.getMethod("main", String[].class).invoke(null, (Object) args);
-            log.info("RuneLite Launcher started successfully");
         } catch (Exception e) {
             log.error("Failed to start RuneLite launcher", e);
-            krakenLauncher.shutdown();
+            launcher.shutdown();
             System.exit(1);
         }
 
-        Runtime.getRuntime().addShutdownHook(new Thread(krakenLauncher::shutdown, "com.kraken.launcher.shutdown"));
+        Runtime.getRuntime().addShutdownHook(new Thread(launcher::shutdown, "com.kraken.launcher.shutdown"));
     }
 }
