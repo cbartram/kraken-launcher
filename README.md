@@ -7,14 +7,14 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/cbartram/kraken-loader-plugin">
-    <img src="src/main/resources/net/runelite/launcher/kraken.png" alt="Logo" width="128" height="128">
+  <a href="https://github.com/cbartram/kraken-launcher">
+    <img src="src/main/resources/logo.png" alt="Logo" width="128" height="128">
   </a>
 
 <h3 align="center">Kraken Launcher</h3>
 
   <p align="center">
-   A RuneLite launcher which side-loads the Kraken essential plugins.
+   A custom RuneLite launcher which loads the Kraken client.
     <br />
 </div>
 
