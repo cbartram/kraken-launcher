@@ -27,10 +27,10 @@ public class ClientWatcher {
         log.info("Starting Client Watcher...");
         new Thread(()-> {
             while(SplashScreen.isOpen()) {
-                try{
+                try {
                     Thread.sleep(100);
-                }catch(Exception ex){
-                    log.error(ex.getMessage(), ex);
+                } catch(Exception ex) {
+                    log.error("exception occurred while sleeping during splash screen: ", ex);
                 }
             }
             log.info("Initializing Kraken loader plugin");

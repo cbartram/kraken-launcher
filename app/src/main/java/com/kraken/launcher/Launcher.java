@@ -17,12 +17,13 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
  * Hijacks the RuneLite launcher to inject custom client code.
  */
-// TODO Set client and API system properties for the plugin to pickup and display on UI
 @Slf4j
 public class Launcher {
 
@@ -106,6 +107,15 @@ public class Launcher {
             for(Artifact artifact : bootstrapDownloader.getKrakenBootstrap().getArtifacts()) {
                 log.info("Adding to CP: {}", artifact.getName());
                 addUrlToClassLoader(urlClassLoader, new URL(artifact.getPath()));
+
+                if(artifact.getName().toLowerCase().startsWith("kraken-client-")) {
+                    // Parse version from kraken-client
+                    System.setProperty("kraken-client-version", parseVersion(artifact.getName().toLowerCase(), "kraken-client-"));
+                }
+
+                if(artifact.getName().toLowerCase().startsWith("kraken-api-")) {
+                    System.setProperty("kraken-api-version", parseVersion(artifact.getName().toLowerCase(),  "kraken-api-"));
+                }
             }
 
             // Wait for the RuneLite injector to be created by Guice.
@@ -152,6 +162,25 @@ public class Launcher {
             Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.error("Failed to patch RuneLite client: ", e);
+        }
+    }
+
+    /**
+     * Parses a semantic version from a JAR file name in the format <name>-<version>.jar
+     * @param name The name of the file to match
+     * @param prefix The prefix of the file i.e kraken-client-
+     * @return The semantic version i.e 1.2.3
+     */
+    private String parseVersion(String name, String prefix) {
+        String regex = prefix + "(\\d+\\.\\d+\\.\\d+)\\.jar";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(name);
+
+        if (matcher.matches()) {
+            return matcher.group(1);
+        } else {
+            log.info("Version not found in the string. Defaulting to v1.0.0");
+            return "1.0.0";
         }
     }
 

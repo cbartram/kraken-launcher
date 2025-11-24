@@ -2,6 +2,7 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'edu.sc.seis.launch4j' version '3.0.5'
 }
 
 def projectVersion = System.getenv("VERSION") ?: '1.0.0'
@@ -12,7 +13,6 @@ project.version = projectVersion
 
 
 repositories {
-    // Use Maven Central for resolving dependencies.
     mavenCentral()
     maven {
         url = "https://repo.runelite.net"
@@ -59,53 +59,28 @@ shadowJar {
     archiveBaseName = 'kraken-launcher'
     archiveVersion = projectVersion
     archiveClassifier = 'fat'
+
+    manifest {
+        attributes(
+                'Main-Class': 'com.kraken.launcher.Installer'
+        )
+    }
 }
 
-publishing {
-    publications {
-        maven(MavenPublication) {
-            from components.java
-            groupId = 'com.github.cbartram'
-            artifactId = 'kraken-launcher'
-            version = project.version
+launch4j {
+    mainClassName = 'com.kraken.launcher.Installer'
+    // Use the output of shadowJar (the fat jar) instead of the default thin jar
+    copyConfigurable = []
+    jarTask = tasks.shadowJar
 
-            pom {
-                name = 'Kraken Launcher'
-                description = 'Kraken Launcher'
-                url = 'https://github.com/cbartram/kraken-launcher'
+    outfile = 'KrakenInstaller.exe'
+    headerType = 'gui'
+    errTitle = 'Kraken Launcher Error'
+    downloadUrl = 'https://kraken-plugins.com/download'
+    jreMinVersion = '1.8.0'
+    icon = "${projectDir}/src/main/resources/favicon.ico"
 
-                licenses {
-                    license {
-                        name = 'MIT License'
-                        url = 'https://opensource.org/licenses/MIT'
-                    }
-                }
-
-                developers {
-                    developer {
-                        id = 'cbartram'
-                        name = 'RuneWraith'
-                        email = 'runewraith.business@gmail.com'
-                    }
-                }
-
-                scm {
-                    connection = 'scm:git:git://github.com/cbartram/kraken-launcher.git'
-                    developerConnection = 'scm:git:ssh://github.com/cbartram/kraken-launcher.git'
-                    url = 'https://github.com/cbartram/kraken-launcher'
-                }
-            }
-        }
-    }
-
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/cbartram/kraken-launcher")
-            credentials {
-                username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
-                password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
-            }
-        }
-    }
+    // Ensure we don't wrap the jar inside the exe if we want it to be extracted,
+    // but usually for a single-file installer, wrapping is preferred.
+    // The plugin defaults will wrap the jar into the exe.
 }

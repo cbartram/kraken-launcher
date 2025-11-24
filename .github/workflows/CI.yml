@@ -1,144 +1,61 @@
-name: CI
+name: Build and Deploy Launcher
 
-on: [ push, pull_request ]
-
-env:
-  RUNELITE_PROFILE: ${{ vars.RUNELITE_PROFILE }}
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+      - master
+  workflow_dispatch: # Allows manual triggering
 
 jobs:
-  windows:
-    runs-on: windows-2022
+  build-and-deploy:
+    environment: Prod
+    runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: 'true'
-    - run: choco install innosetup --version 6.4.0
-    - name: Set up JDK 11
-      uses: actions/setup-java@v4
-      with:
-        java-version: 11
-        distribution: temurin
-        cache: gradle
-    - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # for nmake
-      with:
-        arch: x64
-    - name: build detours x64
-      shell: cmd
-      run: |
-        cd detours/src
-        nmake
-    - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # for nmake
-      with:
-        arch: x86
-    - name: build detours x86
-      shell: cmd
-      run: |
-        cd detours/src
-        nmake
-    - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # for nmake
-      with:
-        arch: amd64_arm64
-    - name: build detours aarch64
-      shell: cmd
-      run: |
-        cd detours/src
-        nmake
-    - name: build launcher
-      run: ./gradlew build -P RUNELITE_BUILD=$env:RUNELITE_PROFILE --no-daemon
-    - name: x64 installer
-      shell: bash
-      run: ./build-win64.sh
-    - name: x86 installer
-      shell: bash
-      run: ./build-win32.sh
-    - name: AArch64 installer
-      shell: bash
-      run: ./build-win-aarch64.sh
-    - uses: actions/upload-artifact@v4
-      with:
-        name: windows
-        path: |
-          RuneLiteSetup.exe
-          RuneLiteSetup32.exe
-          RuneLiteSetupAArch64.exe
-        if-no-files-found: error
-  linux:
-    runs-on: ubuntu-24.04
-    steps:
-    - run: sudo apt update
-    - run: sudo apt install -y gcc-9-aarch64-linux-gnu g++-9-aarch64-linux-gnu
-    - uses: actions/checkout@v4
-      with:
-        submodules: 'true'
-    - name: Set up JDK 11
-      uses: actions/setup-java@v4
-      with:
-        java-version: 11
-        distribution: temurin
-        cache: gradle
-    - name: build
-      run: ./gradlew build -P RUNELITE_BUILD=$RUNELITE_PROFILE
-    - run: ./build-linux-x86_64.sh
-    - run: ./build-linux-aarch64.sh
-    - uses: actions/upload-artifact@v4
-      with:
-        name: jar
-        path: build/libs/RuneLite.jar
-        if-no-files-found: error
-    - uses: actions/upload-artifact@v4
-      with:
-        name: linux
-        path: |
-          appimagetool-x86_64.AppImage
-          runtime-x86_64
-          runtime-aarch64
-          RuneLite.AppImage
-          RuneLite-aarch64.AppImage
-        if-no-files-found: error
-  macos:
-    runs-on: macos-13
-    steps:
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-    - uses: actions/checkout@v4
-      with:
-        submodules: 'true'
-    - name: Set up JDK 11
-      uses: actions/setup-java@v4
-      with:
-        java-version: 11
-        distribution: temurin
-        cache: gradle
-    - name: build
-      run: ./gradlew build -P RUNELITE_BUILD=$RUNELITE_PROFILE
-    - name: clone create-dmg
-      run: git clone https://github.com/runelite/create-dmg -b runelite-1.0
-    - name: build create-dmg
-      run: |
-        set -e
-        cd create-dmg
-        npm install
-        ln -s cli.js create-dmg
-        chmod +x create-dmg
-    - run: echo create-dmg >> $GITHUB_PATH
-    - name: macos-x64
-      run: ./build-osx-x64.sh --build --dmg
-    - name: macos-aarch64
-      run: ./build-osx-aarch64.sh --build --dmg
-    # tar app to keep permissions correct
-    - name: tar app
-      run: tar -cf app.tar build/macos-x64/RuneLite.app build/macos-aarch64/RuneLite.app build-osx-x64.sh build-osx-aarch64.sh osx/signing.entitlements
-    - uses: actions/upload-artifact@v4
-      with:
-        name: macos-dmg
-        path: |
-          RuneLite-x64.dmg
-          RuneLite-aarch64.dmg
-        if-no-files-found: error
-    - uses: actions/upload-artifact@v4
-      with:
-        name: macos-app
-        path: |
-          app.tar
-        if-no-files-found: error
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build Fat Jar and Windows Exe
+        run: ./gradlew shadowJar createExe --no-daemon
+
+      - name: List Build Artifacts (Debugging)
+        run: |
+          echo "Listing Libs:"
+          ls -R build/libs
+          echo "Listing Launch4j:"
+          ls -R build/launch4j
+
+      - name: Install MinIO Client
+        run: |
+          curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /tmp/mc
+          chmod +x /tmp/mc
+          sudo mv /tmp/mc /usr/local/bin/mc
+          mc --version
+
+      - name: Configure MinIO Client
+        run: |
+          mc alias set s3 ${{secrets.MINIO_URL}} ${{ secrets.MINIO_ACCESS_KEY }} ${{ secrets.MINIO_SECRET_KEY }}
+
+      - name: Upload to MinIO
+        run: |
+          JAR_FILE=$(find build/libs -name "*-fat.jar" | head -n 1)
+          EXE_FILE="build/launch4j/KrakenInstaller.exe"
+          
+          echo "Found Jar: $JAR_FILE"
+          echo "Found Exe: $EXE_FILE"
+
+          mc cp "$EXE_FILE" s3/kraken-bootstrap-static/KrakenSetup.exe
+          mc cp "$JAR_FILE" s3/kraken-bootstrap-static/KrakenSetup.jar
