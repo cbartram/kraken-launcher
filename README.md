@@ -18,115 +18,64 @@
     <br />
 </div>
 
-This project is a modified fork of the [RuneLite launcher](https://github.com/runelite/launcher).
+# Kraken Launcher
 
-Loads the latest version of the [Kraken Client](https://kraken-plugins.com/download) from S3. This allows updates to be made to the Kraken client independently of user downloads.
-With this tool users no longer need to constantly download the newest version of the [Kraken Client](https://kraken-plugins.com/download) to play the game. Instead, they can download
-this launcher JAR once, and it will automatically pull the latest [Kraken client](https://kraken-plugins.com/download) from S3 for users.
+Kraken Launcher is a custom bootstrap loader designed to wrap and modify the official RuneLite client. It functions by 
+intercepting the RuneLite startup process, patching the RuneLite `URLClassLoader`, and injecting custom, side-loaded plugins (specifically the Kraken Client) 
+directly into the client's Guice dependency graph. This project was inspired by [Arnuh's RuneLite Hijack repository](https://github.com/Arnuh/RuneLiteHijack/tree/master) which uses a similar system for
+loading custom plugins without modifying or forking RuneLite's launcher.
 
-This should be the primary way users launch the game if they intend to use Kraken plugins.
+> ⚠️ Disclaimer: This software modifies the RuneLite client at runtime. Use at your own risk. 
+> The developers are not responsible for account bans or client instability caused by RuneLite updates.
 
-Currently, all plugins for the client are released for free at [our website here](https://kraken-plugins.com). Some features this client offers are:
+## 🚀 Features
 
-- Discord authentication and sign up / sign in
-- Auto plugin loading (and automatic plugin & client updates)
-- Jagex account compatibility
-- Native Jagex Launcher Compatibility
-- RuneLite mode (Run the client as normal RuneLite without any Kraken plugins)
-- Native RuneLite Client (no injection or client modification)
-- 18+ bossing, raids, and skilling plugins
+- Automated Bootstrap Management: Downloads and caches artifacts for both RuneLite and Kraken to ensure version compatibility.
+- Runtime Injection: Hooks into the RuneLite URLClassLoader to inject external JARs without modifying the physical RuneLite client files.
+- Safety Hash Checking: Automatically verifies RuneLite's injected-client and rlicn artifacts against known "safe" hashes. If RuneLite pushes a silent update, the launcher halts to prevent detection/instability.
+- Vanilla Fallback: Includes a --rl flag to bypass injection and run the standard RuneLite client.
 
-Kraken Plugins are not "bots". They do not perform any type of automation for you. Instead they show you useful information about the boss or raid encounter for example:
-- Hydra attack counter
-- Highlight skull locations for P2 wardens
-- Tick counter for Soteseg green ball
-- etc...
+## 🛠 Architecture & How It Works
+The launcher operates by "hijacking" the standard Java startup process. Bootstrap Resolution: The launcher contacts the
+Kraken server to get the manifest of required artifacts. It downloads RuneLite's bootstrap and compares the SHA-256 
+hashes of the gamepack and injection hooks against Kraken's allowed list. The launcher hijacks the RuneLite URLClassLoader
+so that it can add custom dependencies to RuneLites classpath after the launcher has started but before the client starts.
 
-Although the Kraken client is safe and doesn't modify RuneLite in any way the plugins are unofficial. **We are not responsible for any bans you may incur for using this client.**
-For more information about the Kraken Client see: [Kraken Client](#about-kraken-client).
+It uses reflection to invoke addURL on this loader, adding the Kraken Client and its dependencies.
+The launcher creates a daemon thread that polls for `net.runelite.client.RuneLite.getInjector()` so that it can use RuneLite
+classes like `PluginManager` Because RuneLite is loaded in a child ClassLoader, 
+the launcher uses Reflection on the `com.google.inject.Injector` interface to access the dependency graph.
 
-# Current Plugins
+The `ClientWatcher` is instantiated via the Guice Injector and waits for the Splash Screen to close, then uses 
+`PluginManager` to forcefully load the Kraken Plugin.
 
-To view, download, and enable plugins,
-check out our website at [kraken-plugins.com](https://kraken-plugins.com/plugins)
+## 📦 Installation & Usage
+This launcher requires Java 11 or higher (matching RuneLite requirements) and RuneLite to be pre-installed on your system.
 
-## Installation
+Download the latest kraken-launcher-fat.jar.
 
-Perform the following to install:
-- Download and install [RuneLite](https://runelite.net/) if you haven't already.
-- Download the `KrakenInstaller.exe` from [Kraken Plugins Website](https://kraken-plugins.com/download).
-- Run the `KrakenInstaller.exe` file (you may have to click "More options" and trust the executable.
-- Run with `RuneLite.exe` or via jagex launcher (see [Jagex launcher details below](#jagex-launcher--jagex-accounts))
-
-## Jagex Launcher & Jagex Accounts
-
-The Kraken Launcher is compatible with the Jagex accounts as well as the Jagex launcher. In order to use the Kraken Launcher with Jagex accounts, follow this guide:
-
-- For Windows, run `RuneLite (configure)` from the start menu. Otherwise, pass `--configure` to the launcher (i.e. `/Applications/RuneLite.app/Contents/MacOS/RuneLite --configure` on Mac).
-- In the Client arguments input box add `--insecure-write-credentials`
-- Click Save
-- Launch RuneLite normally via the Jagex launcher. RuneLite will write your launcher credentials to .runelite/credentials.properties.
-- On your next launch it will use the saved credentials allowing you to use your Jagex account with Kraken plugins.
-
-If you want to use a non-jagex account with Kraken you can delete the credentials.properties file to return your Kraken Client back to normal.
-If for any reason you need to invalidate the credentials, you can use the "End sessions" button under account settings on runescape.com.
-
-## RuneLite Mode
-
-If you would like to run RuneLite like normal without any Kraken plugins loading:
-
-- Click the windows start menu
-- Type "RuneLite (Configure)" and hit enter
-- In the dialogue box click the "RuneLite mode" checkbox
-- Click Save
-
-Your next client run will not load any Kraken plugins and leave RuneLite untouched.
-
-## Development
-
-To get started with development on the kraken launcher, clone this repository with:
-
-`git clone https://github.com/cbartram/kraken-launcher.git`
-
-You can build and run the jar with:
+Standard Mode (Injected):
 
 ```shell
-./gradlew build
-
-java -Ddeveloper-mode=true -jar ./target/RuneLite.jar
+java -jar kraken-launcher-1.0.0-fat.jar
 ```
 
-If you would like to run in developer mode to load Kraken plugins from the `/dev` prefix in S3 pass:
+## 🏗️ Building from Source
+This project uses Gradle to build from source. You can build the shaded JAR file using the following command:
 
 ```shell
-java -Ddeveloper-mode=true -jar ./target/RuneLite.jar
+./gradlew clean shadowJar
 ```
 
-### Prerequisites
-
-Install Gradle in order to build and run this program:
-
-- [Gradle](https://gradle.org/install/)
-
-## Deployment
-
-Deployment for this is handled through InnoSetup to create a .exe installer. The installer expects a pre-built jar artifact in `/build/libs/RuneLite.jar`
-
-- Create a build with `./gradlew clean build`, this creates the `RuneLite.jar` file in `build/libs`
-- Run `./gradlew filterInnosetup` to generate a .iss setup file for Kraken
-- Run [InnoSetup](https://jrsoftware.org/isinfo.php)
-- Load the `kraken64.iss` file into InnoSetup from `/build/filtered-resources`
-- Click the play button to build `KrakenSetup.exe`
-- Upload `KrakenSetup.exe` to minio with: `mc cp ./KrakenSetup.exe s3/kraken-bootstrap-static/`
-- Rename `RuneLite.jar` to `kraken-launcher-x.x.x.jar` in the `build/libs` directory
-- Upload the Launcher Jar to minio with: `mc cp ./build/libs/kraken-launcher-x.x.x.jar s3/kraken-bootstrap-static/`
-- (Optional) Update the GitHub page with the latest release.
+The output will be in `build/libs/kraken-launcher-1.0.0-fat.jar`. 
+You can also build a `.exe` file for easy Windows installation using: `./gradlew clean createExe`
 
 ## Built With
 
-- [Java](https://www.java.org/) - Programming Language Used
-- [InnoSetup](https://jrsoftware.org/isinfo.php) - Executable build software
-- [Gradle](https://gradle.org/) - Build Tool
+- [Gradle](https://go.dev/doc/install) - Build tool
+- [Java](https://www.java.com/en/download/) - Programming language used for the plugins
+- [RuneLite](https://runelite.net/) - The base client for the plugins
+- [MinIO](https://min.io/) - Object storage for the plugins and bootstrap.json file
 
 ## Contributing
 
@@ -137,7 +86,14 @@ of conduct, and the process for submitting pull requests to us.
 
 We use [Semantic Versioning](http://semver.org/) for versioning. For the versions
 available, see the [tags on this
-repository](https://github.com/cbartram/kraken-launcher/tags).
+repository](https://github.com/cbartram/kraken-loader-plugin/tags).
+
+## Authors
+
+- *Initial Project implementation* - [RuneWraith](https://github.com/cbartram)
+
+See also the list of [contributors](https://github.com/PurpleBooth/a-good-readme-template/contributors)
+who participated in this project.
 
 ## License
 
@@ -147,7 +103,8 @@ details
 
 ## Acknowledgments
 
-- RuneLite for making a great software! The SplashScreen, and most of this codebase was taken from RuneLite!
+- RuneLite for making an incredible piece of software and API.
+- Arnuh's [RuneLiteHijack repo](https://github.com/Arnuh/RuneLiteHijack/tree/master) for inspiration on the actual Hijack process
 
 [contributors-shield]: https://img.shields.io/github/contributors/cbartram/kraken-launcher.svg?style=for-the-badge
 [contributors-url]: https://github.com/cbartram/kraken-launcher/graphs/contributors

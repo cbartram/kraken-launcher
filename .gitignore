@@ -1,17 +1,5 @@
-/target
-nbactions.xml
-nb-configuration.xml
-/nbproject/
-project.properties
-*.iml
-.idea/
-.project
-.settings/
-.classpath
-dependency-reduced-pom.xml
+# Ignore Gradle project-specific cache directory
 .gradle
+
+# Ignore Gradle build output directory
 build
-.idea
-RuneLiteSetup*.exe
-target
-KrakenSetup.exe

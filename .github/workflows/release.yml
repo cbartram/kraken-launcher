@@ -1,0 +1,61 @@
+name: Build and Deploy Launcher
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+      - master
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  build-and-deploy:
+    environment: Prod
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build Fat Jar and Windows Exe
+        run: ./gradlew shadowJar createExe --no-daemon
+
+      - name: List Build Artifacts (Debugging)
+        run: |
+          echo "Listing Libs:"
+          ls -R build/libs
+          echo "Listing Launch4j:"
+          ls -R build/launch4j
+
+      - name: Install MinIO Client
+        run: |
+          curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /tmp/mc
+          chmod +x /tmp/mc
+          sudo mv /tmp/mc /usr/local/bin/mc
+          mc --version
+
+      - name: Configure MinIO Client
+        run: |
+          mc alias set s3 ${{secrets.MINIO_URL}} ${{ secrets.MINIO_ACCESS_KEY }} ${{ secrets.MINIO_SECRET_KEY }}
+
+      - name: Upload to MinIO
+        run: |
+          JAR_FILE=$(find build/libs -name "*-fat.jar" | head -n 1)
+          EXE_FILE="build/launch4j/KrakenInstaller.exe"
+          
+          echo "Found Jar: $JAR_FILE"
+          echo "Found Exe: $EXE_FILE"
+
+          mc cp "$EXE_FILE" s3/kraken-bootstrap-static/KrakenSetup.exe
+          mc cp "$JAR_FILE" s3/kraken-bootstrap-static/KrakenSetup.jar
