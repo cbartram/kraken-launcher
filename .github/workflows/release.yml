@@ -7,7 +7,12 @@ on:
     branches:
       - main
       - master
-  workflow_dispatch: # Allows manual triggering
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.2.3)'
+        required: false
+        type: string
 
 jobs:
   build-and-deploy:
@@ -17,6 +22,25 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper tagging
+
+      - name: Determine Version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
+            # Manual trigger with version input
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            # Tag push - extract version from tag
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            # Branch push - use timestamp-based version
+            VERSION="1.0.0-dev.$(date +%Y%m%d.%H%M%S)"
+          fi
+          
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version determined: $VERSION"
 
       - name: Set up JDK 11
         uses: actions/setup-java@v4
@@ -29,14 +53,26 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Fat Jar and Windows Exe
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
         run: ./gradlew shadowJar createExe --no-daemon
 
-      - name: Create Git tag
+      - name: Create and Push Git Tag
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "${VERSION}" -m "Release ${VERSION}"
-          git push origin "${VERSION}"
+          
+          TAG_NAME="v${{ steps.version.outputs.VERSION }}"
+          
+          # Check if tag already exists
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists, skipping tag creation"
+          else
+            git tag -a "$TAG_NAME" -m "Release ${{ steps.version.outputs.VERSION }}"
+            git push origin "$TAG_NAME"
+            echo "Created and pushed tag: $TAG_NAME"
+          fi
 
       - name: Install MinIO Client
         run: |
@@ -47,15 +83,31 @@ jobs:
 
       - name: Configure MinIO Client
         run: |
-          mc alias set s3 ${{secrets.MINIO_URL}} ${{ secrets.MINIO_ACCESS_KEY }} ${{ secrets.MINIO_SECRET_KEY }}
+          mc alias set s3 ${{ secrets.MINIO_URL }} ${{ secrets.MINIO_ACCESS_KEY }} ${{ secrets.MINIO_SECRET_KEY }}
 
       - name: Upload to MinIO
         run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
           JAR_FILE=$(find app/build/libs -name "*-fat.jar" | head -n 1)
           EXE_FILE="app/build/launch4j/KrakenInstaller.exe"
           
+          echo "Version: $VERSION"
           echo "Found Jar: $JAR_FILE"
           echo "Found Exe: $EXE_FILE"
+          
+          mc cp "$EXE_FILE" "s3/kraken-bootstrap-static/KrakenSetup.exe"
+          mc cp "$JAR_FILE" "s3/kraken-bootstrap-static/KrakenSetup.jar"
 
-          mc cp "$EXE_FILE" s3/kraken-bootstrap-static/KrakenSetup.exe
-          mc cp "$JAR_FILE" s3/kraken-bootstrap-static/KrakenSetup.jar
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            app/build/launch4j/KrakenInstaller.exe
+            app/build/libs/*-fat.jar
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ steps.version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
