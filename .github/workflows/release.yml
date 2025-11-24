@@ -31,12 +31,12 @@ jobs:
       - name: Build Fat Jar and Windows Exe
         run: ./gradlew shadowJar createExe --no-daemon
 
-      - name: List Build Artifacts (Debugging)
+      - name: Create Git tag
         run: |
-          echo "Listing Libs:"
-          ls -R app/build/libs
-          echo "Listing Launch4j:"
-          ls -R app/build/launch4j
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${VERSION}" -m "Release ${VERSION}"
+          git push origin "${VERSION}"
 
       - name: Install MinIO Client
         run: |

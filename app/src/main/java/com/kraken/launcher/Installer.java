@@ -2,8 +2,8 @@ package com.kraken.launcher;
 
 import com.google.gson.*;
 
-import javax.swing.*;
-import java.io.File;
+        import javax.swing.*;
+        import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -12,15 +12,18 @@ import java.nio.file.StandardCopyOption;
 
 public class Installer {
 
-    private static final String RUNELITE_DIR = System.getenv("LOCALAPPDATA") + "\\RuneLite";
-    private static final String CONFIG_FILE = RUNELITE_DIR + "\\config.json";
+    private static final String OS_NAME = System.getProperty("os.name").toLowerCase();
+    private static final boolean IS_WINDOWS = OS_NAME.contains("win");
+    private static final boolean IS_MAC = OS_NAME.contains("mac");
+
+    private static final String RUNELITE_DIR = getRuneLiteDirectory();
+    private static final String CONFIG_FILE = RUNELITE_DIR + File.separator + "config.json";
     private static final String TARGET_MAIN_CLASS = "com.kraken.launcher.Launcher";
 
     public static void main(String[] args) {
         try {
-            // 1. Verify we are on Windows (since paths are hardcoded for AppData)
-            if (!System.getProperty("os.name").toLowerCase().contains("win")) {
-                showError("This installer is designed for Windows.");
+            if (!IS_WINDOWS && !IS_MAC || RUNELITE_DIR == null) {
+                showError("This installer is designed for Windows and macOS only.");
                 return;
             }
 
@@ -32,14 +35,16 @@ public class Installer {
                 showError("RuneLite installation not found at: " + RUNELITE_DIR + "\nPlease install RuneLite first.");
                 return;
             }
+
             File targetJar = new File(targetDir, jarName);
 
-            // We perform a copy even if it exists to update to the new version
+            // Copy the jar to the RuneLite directory (updates if already exists)
             if (!currentJar.equals(targetJar)) {
                 Files.copy(currentJar.toPath(), targetJar.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
 
             updateConfigJson(jarName);
+
             JOptionPane.showMessageDialog(null,
                     "Kraken Launcher installed successfully!\n\n" +
                             "You can now launch RuneLite normally.",
@@ -50,6 +55,15 @@ public class Installer {
             e.printStackTrace();
             showError("Installation failed: " + e.getMessage());
         }
+    }
+
+    private static String getRuneLiteDirectory() {
+        if (IS_WINDOWS) {
+            return System.getenv("LOCALAPPDATA") + "\\RuneLite";
+        } else if (IS_MAC) {
+            return "/Applications/RuneLite.app/Contents/Resources";
+        }
+        return null;
     }
 
     private static void updateConfigJson(String jar) throws IOException {
@@ -66,6 +80,7 @@ public class Installer {
         }
 
         configObject.addProperty("mainClass", TARGET_MAIN_CLASS);
+
         if (configObject.has("classPath")) {
             JsonArray classPath = configObject.getAsJsonArray("classPath");
             boolean jarExists = false;
@@ -82,7 +97,6 @@ public class Installer {
                 classPath.add(jar);
             }
         } else {
-            // Create classpath if it somehow doesn't exist
             JsonArray classPath = new JsonArray();
             classPath.add("RuneLite.jar");
             classPath.add(jar);
