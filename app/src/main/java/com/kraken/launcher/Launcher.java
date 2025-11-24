@@ -3,6 +3,8 @@ package com.kraken.launcher;
 import com.kraken.launcher.bootstrap.BootstrapDownloader;
 import com.kraken.launcher.bootstrap.model.Artifact;
 import com.kraken.launcher.bootstrap.model.Bootstrap;
+import com.kraken.launcher.ui.LauncherPreferences;
+import com.kraken.launcher.ui.LauncherUI;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.FatalErrorDialog;
 
@@ -48,7 +50,7 @@ public class Launcher {
     /**
      * Starts the hijack process asynchronously.
      */
-    public boolean start() {
+    public boolean start(LauncherPreferences preferences) {
         try {
             bootstrapDownloader.downloadKrakenBootstrap();
             bootstrapDownloader.downloadRuneLiteBootstrap();
@@ -56,7 +58,7 @@ public class Launcher {
             log.error("Error fetching one of the bootstrap files, shutting down: ", e);
             return false;
         }
-        executorService.submit(this::patchLauncher);
+        executorService.submit(() -> patchLauncher(preferences));
         return true;
     }
 
@@ -80,14 +82,14 @@ public class Launcher {
      * loads JAR artifacts from the bootstrap in order to make sure the launcher has all the Kraken dependencies
      * on the classpath when the Kraken Client plugin loads.
      */
-    private void patchLauncher() {
+    private void patchLauncher(LauncherPreferences preferences) {
         if(bootstrapDownloader.getKrakenBootstrap() == null || bootstrapDownloader.getRuneliteBootstrap() == null) {
             log.error("Kraken or RuneLite Bootstrap file is null. Cannot patch client classpath with unknown dependencies.");
             return;
         }
 
         // TODO A way to override this (how will users pass configuration in we don't control a launcher UI)?
-        if(!checkInjectedClientVersion(bootstrapDownloader)) {
+        if(!checkInjectedClientVersion(bootstrapDownloader, preferences)) {
             log.error("RuneLite's injected-client artifact does not match Kraken's hash. RuneLite has pushed an update which needs to be verified.");
             return;
         }
@@ -189,7 +191,12 @@ public class Launcher {
      * the client is safe to use.
      * @return True if RuneLite's injected client hash matches Kraken's (i.e RuneLite has not pushed a new update).
      */
-    private boolean checkInjectedClientVersion(BootstrapDownloader downloader) {
+    private boolean checkInjectedClientVersion(BootstrapDownloader downloader, LauncherPreferences preferences) {
+        if (preferences.isSkipUpdateCheck()) {
+            log.warn("Skipping update check as requested - USE AT YOUR OWN RISK");
+            return true;
+        }
+
         if(downloader.getRuneliteBootstrap() == null || downloader.getKrakenBootstrap() == null) {
             log.error("Cannot check injected client hash, either Kraken or RuneLite's bootstrap is null");
             return false;
@@ -227,7 +234,6 @@ public class Launcher {
 
             SwingUtilities.invokeLater(() -> (new FatalErrorDialog("The Kraken Client is currently offline. (RLICN hash mismatch) \n\nThis is likely due to RuneLite pushing a new client update that needs to be checked by the Kraken team to ensure it keeps the client safe and undetected. \n\nIf you would like to run vanilla RuneLite from this launcher, set runelite mode in the runelite (configure) window or use the --rl arg or skip this message AT YOUR OWN RISK by checking the \"Skip RuneLite Update Check\" checkbox.")).open());
         }
-
 
         log.error("Could not locate RuneLite's injected-client artifact in bootstrap or Kraken's client in Kraken's bootstrap");
         return false;
@@ -282,17 +288,30 @@ public class Launcher {
         addUrl.invoke(classLoader, url);
     }
 
-
-    public static void main(String[] args) {
+    /**
+     * Starts the launcher with preferences from the GUI
+     */
+    public static void startWithPreferences(LauncherPreferences preferences, String[] args) {
         log.info("Starting Kraken Launcher");
         System.setProperty("runelite.launcher.nojvm", "true");
         System.setProperty("runelite.launcher.reflect", "true");
 
+        // Set proxy system property if specified
+        if (preferences.getProxy() != null && !preferences.getProxy().isEmpty()) {
+            System.setProperty("kraken.proxy", preferences.getProxy());
+            log.info("Proxy configured: {}", preferences.getProxy());
+        }
+
         Launcher launcher = new Launcher(new BootstrapDownloader());
 
-        if(!launcher.start()) {
-            log.info("Kraken Launcher failed to start, see error messages above.");
-            return;
+        // Skip launcher.start() if RuneLite mode is enabled
+        if (!preferences.isRuneliteMode()) {
+            if (!launcher.start(preferences)) {
+                log.info("Kraken Launcher failed to start, see error messages above.");
+                return;
+            }
+        } else {
+            log.info("RuneLite mode enabled - skipping Kraken bootstrap");
         }
 
         try {
@@ -305,5 +324,18 @@ public class Launcher {
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread(launcher::shutdown, "com.kraken.launcher.shutdown"));
+    }
+
+    public static void main(String[] args) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            log.warn("Failed to set system look and feel", e);
+        }
+
+        SwingUtilities.invokeLater(() -> {
+            LauncherUI gui = new LauncherUI();
+            gui.setVisible(true);
+        });
     }
 }
