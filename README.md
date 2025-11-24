@@ -8,7 +8,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/cbartram/kraken-launcher">
-    <img src="src/main/resources/logo.png" alt="Logo" width="128" height="128">
+    <img src="app/src/main/resources/logo.png" alt="Logo" width="128" height="128">
   </a>
 
 <h3 align="center">Kraken Launcher</h3>
