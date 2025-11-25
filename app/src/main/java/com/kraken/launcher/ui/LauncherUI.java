@@ -3,6 +3,7 @@ package com.kraken.launcher.ui;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.kraken.launcher.Launcher;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -23,10 +24,13 @@ public class LauncherUI extends JFrame {
     private static final Color CARD_BG = new Color(45, 45, 45);
     private static final Color TEXT_COLOR = new Color(220, 220, 220);
 
+    @Getter
+    private final LauncherPreferences preferences;
+
     private JCheckBox runeliteModeCheckbox;
     private JCheckBox skipUpdateCheckbox;
+    private JCheckBox skipLauncherCheckbox;
     private JTextField proxyTextField;
-    private final LauncherPreferences preferences;
     private final Gson gson;
 
     public LauncherUI() {
@@ -88,15 +92,19 @@ public class LauncherUI extends JFrame {
                 BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
 
-        // RuneLite Mode checkbox
         runeliteModeCheckbox = createStyledCheckbox("RuneLite Mode");
         runeliteModeCheckbox.setToolTipText("Run native RuneLite without any type of Kraken modifications");
 
-        // Skip Update Check checkbox
         skipUpdateCheckbox = createStyledCheckbox("Skip Update Check");
         skipUpdateCheckbox.setToolTipText("Skips checking RuneLite after updates which could detect or track third party clients. (USE AT YOUR OWN RISK)");
 
-        // Proxy input
+        skipLauncherCheckbox = createStyledCheckbox("Skip Launcher");
+        skipLauncherCheckbox.setToolTipText(
+                "<html>Skips the Kraken Launcher dialogue.<br>" +
+                        "To re-enable the dialogue again, run with --configure flag<br>" +
+                        "or set 'skipLauncher' to false in: ~/.runelite/kraken/krakenprefs.json</html>"
+        );
+
         JLabel proxyLabel = new JLabel("Proxy (SOCKS5):");
         proxyLabel.setForeground(TEXT_COLOR);
         proxyLabel.setFont(new Font("Arial", Font.PLAIN, 13));
@@ -118,6 +126,8 @@ public class LauncherUI extends JFrame {
         optionsPanel.add(runeliteModeCheckbox);
         optionsPanel.add(Box.createVerticalStrut(15));
         optionsPanel.add(skipUpdateCheckbox);
+        optionsPanel.add(Box.createVerticalStrut(15));
+        optionsPanel.add(skipLauncherCheckbox);
         optionsPanel.add(Box.createVerticalStrut(20));
         optionsPanel.add(proxyLabel);
         optionsPanel.add(Box.createVerticalStrut(8));
@@ -180,21 +190,19 @@ public class LauncherUI extends JFrame {
         return button;
     }
 
-    private void onStartClicked() {
-        // Save preferences
+    public void onStartClicked() {
+        log.info("Starting RuneLite launcher");
         preferences.setRuneliteMode(runeliteModeCheckbox.isSelected());
         preferences.setSkipUpdateCheck(skipUpdateCheckbox.isSelected());
+        preferences.setSkipLauncher(skipLauncherCheckbox.isSelected());
         preferences.setProxy(proxyTextField.getText().trim());
         savePreferences();
 
-        // Hide the GUI
         setVisible(false);
 
-        // Start launcher in a separate thread
         new Thread(() -> {
             try {
-                String[] args = buildLauncherArgs();
-                Launcher.startWithPreferences(preferences, args);
+                Launcher.startWithPreferences(preferences);
             } catch (Exception e) {
                 log.error("Failed to start launcher", e);
                 SwingUtilities.invokeLater(() -> {
@@ -211,20 +219,18 @@ public class LauncherUI extends JFrame {
     }
 
     private void onCancelClicked() {
+        preferences.setRuneliteMode(runeliteModeCheckbox.isSelected());
+        preferences.setSkipUpdateCheck(skipUpdateCheckbox.isSelected());
+        preferences.setSkipLauncher(skipLauncherCheckbox.isSelected());
+        preferences.setProxy(proxyTextField.getText().trim());
+        savePreferences();
         System.exit(0);
-    }
-
-    private String[] buildLauncherArgs() {
-        String proxy = proxyTextField.getText().trim();
-        if (!proxy.isEmpty()) {
-            return new String[]{"--proxy=" + proxy};
-        }
-        return new String[]{};
     }
 
     private void loadPreferencesToUI() {
         runeliteModeCheckbox.setSelected(preferences.isRuneliteMode());
         skipUpdateCheckbox.setSelected(preferences.isSkipUpdateCheck());
+        skipLauncherCheckbox.setSelected(preferences.isSkipLauncher());
         proxyTextField.setText(preferences.getProxy() != null ? preferences.getProxy() : "");
     }
 
