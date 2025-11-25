@@ -99,7 +99,6 @@ jobs:
           mc cp "$JAR_FILE" "s3/kraken-bootstrap-static/KrakenSetup.jar"
 
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
         with:
           files: |
