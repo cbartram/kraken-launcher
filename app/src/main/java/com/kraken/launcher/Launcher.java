@@ -3,10 +3,10 @@ package com.kraken.launcher;
 import com.kraken.launcher.bootstrap.BootstrapDownloader;
 import com.kraken.launcher.bootstrap.model.Artifact;
 import com.kraken.launcher.bootstrap.model.Bootstrap;
+import com.kraken.launcher.ui.FatalErrorDialog;
 import com.kraken.launcher.ui.LauncherPreferences;
 import com.kraken.launcher.ui.LauncherUI;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.ui.FatalErrorDialog;
 
 import javax.inject.Inject;
 import javax.swing.*;
@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class Launcher {
 
+    public static final String VERSION = "1.0.0";
     private static final long CLASSLOADER_POLL_INTERVAL_MS = 100;
     private static final long SHUTDOWN_TIMEOUT_SECONDS = 10;
     private static final String RUNELITE_PACKAGE = "net.runelite.client.rs";
@@ -54,19 +55,31 @@ public class Launcher {
             bootstrapDownloader.downloadRuneLiteBootstrap();
         } catch (IOException e) {
             log.error("Error fetching one of the bootstrap files, shutting down: ", e);
+            try {
+                SwingUtilities.invokeAndWait(() -> (new FatalErrorDialog("The Kraken Client is currently offline. Could not fetch RuneLite or Kraken's bootstrap.")).open());
+            } catch (Exception ex) {
+                log.error("Failed to show failure fetching bootstrap error to users: ", e);
+            }
             return false;
         }
 
         if(bootstrapDownloader.getKrakenBootstrap() == null || bootstrapDownloader.getRuneliteBootstrap() == null) {
             log.error("Kraken or RuneLite Bootstrap file is null. Cannot patch client classpath with unknown dependencies.");
-            SwingUtilities.invokeLater(() -> (new FatalErrorDialog("Kraken or RuneLite Bootstrap file is null. Cannot patch client classpath with unknown dependencies.")).open());
-
+            try {
+                SwingUtilities.invokeAndWait(() -> (new FatalErrorDialog("The Kraken Client is currently offline. One of the bootstrap files is null.")).open());
+            } catch (Exception e) {
+                log.error("Failed to show null bootstrap error to users: ", e);
+            }
             return false;
         }
 
         if(!checkInjectedClientVersion(bootstrapDownloader, preferences)) {
             log.error("RuneLite's injected-client artifact does not match Kraken's hash. RuneLite has pushed an update which needs to be verified.");
-            SwingUtilities.invokeLater(() -> (new FatalErrorDialog("The Kraken Client is currently offline. (injected-client version mismatch) \n\nThis is likely due to RuneLite pushing a new client update that needs to be checked by the Kraken team to ensure it keeps the client safe and undetected. \n\nIf you would like to run vanilla RuneLite from this launcher, set runelite mode in the runelite (configure) window or use the --rl arg or skip this message AT YOUR OWN RISK by checking the \"Skip RuneLite Update Check\" checkbox.")).open());
+            try {
+                SwingUtilities.invokeAndWait(() -> (new FatalErrorDialog("The Kraken Client is currently offline. (injected-client version mismatch) \n\nThis is likely due to RuneLite pushing a new client update that needs to be checked by the Kraken team to ensure it keeps the client safe and undetected. \n\nIf you would like to run vanilla RuneLite from this launcher, check the \"RuneLite Mode\" option in the launcher UI or skip this message AT YOUR OWN RISK by checking the \"Skip RuneLite Update Check\" checkbox.")).open());
+            } catch (Exception e) {
+                log.error("Failed to show injected-client-mismatch error to users: ", e);
+            }
             return false;
         }
 
@@ -336,7 +349,7 @@ public class Launcher {
         }
 
         if (!uri.getPath().endsWith(".jar")) {
-            uri = uri.resolve("kraken-launcher-1.0.0-fat.jar");
+            uri = uri.resolve("kraken-launcher-" + VERSION + "-fat.jar");
         }
 
         return uri.toURL();

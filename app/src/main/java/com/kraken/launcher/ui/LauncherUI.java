@@ -54,10 +54,10 @@ public class LauncherUI extends JFrame {
         mainPanel.setBackground(DARK_BG);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
 
-        // Logo panel
-        JPanel logoPanel = new JPanel();
-        logoPanel.setBackground(DARK_BG);
-        logoPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        // Logo
+        JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        logoPanel.setBackground(DARK_BG); // Matches parent
+        logoPanel.setOpaque(false);       // transparency ensures no gray box
 
         try {
             URL logoUrl = getClass().getClassLoader().getResource("logo.png");
@@ -71,17 +71,27 @@ public class LauncherUI extends JFrame {
             log.warn("Could not load logo.png", e);
         }
 
+        // Title Text
         JLabel titleLabel = new JLabel("KRAKEN LAUNCHER");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         titleLabel.setForeground(PRIMARY_GREEN);
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT); // Required for BoxLayout centering
 
+        JLabel versionLabel = new JLabel("v" + Launcher.VERSION);
+        versionLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        versionLabel.setForeground(new Color(150, 150, 150)); // Muted Gray
+        versionLabel.setAlignmentX(Component.CENTER_ALIGNMENT); // Required for BoxLayout centering
+
+        // Container for Logo + Title + Version
         JPanel titlePanel = new JPanel();
+        titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS)); // Stacks vertically
         titlePanel.setBackground(DARK_BG);
-        titlePanel.setLayout(new BorderLayout());
-        titlePanel.add(logoPanel, BorderLayout.NORTH);
-        titlePanel.add(titleLabel, BorderLayout.SOUTH);
-        titlePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+        titlePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0)); // Bottom padding
+
+        titlePanel.add(logoPanel);
+        titlePanel.add(titleLabel);
+        titlePanel.add(Box.createVerticalStrut(3));
+        titlePanel.add(versionLabel);
 
         // Options panel
         JPanel optionsPanel = new JPanel();
