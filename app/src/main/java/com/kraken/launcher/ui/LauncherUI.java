@@ -152,7 +152,8 @@ public class LauncherUI extends JFrame {
         JButton startButton = createStyledButton("Start RuneLite", PRIMARY_GREEN);
         JButton cancelButton = createStyledButton("Cancel", new Color(80, 80, 80));
 
-        startButton.addActionListener(e -> onStartClicked());
+        // If the UI is showing then users did not launch in Configure mode
+        startButton.addActionListener(e -> onStartClicked(false));
         cancelButton.addActionListener(e -> onCancelClicked());
 
         buttonsPanel.add(startButton);
@@ -200,7 +201,7 @@ public class LauncherUI extends JFrame {
         return button;
     }
 
-    public void onStartClicked() {
+    public void onStartClicked(boolean configure) {
         log.info("Starting RuneLite launcher");
         preferences.setRuneliteMode(runeliteModeCheckbox.isSelected());
         preferences.setSkipUpdateCheck(skipUpdateCheckbox.isSelected());
@@ -212,7 +213,7 @@ public class LauncherUI extends JFrame {
 
         new Thread(() -> {
             try {
-                Launcher.startWithPreferences(preferences);
+                Launcher.startWithPreferences(preferences, configure);
             } catch (Exception e) {
                 log.error("Failed to start launcher", e);
                 SwingUtilities.invokeLater(() -> {

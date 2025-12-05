@@ -367,7 +367,7 @@ public class Launcher {
     /**
      * Starts the launcher with preferences from the GUI
      */
-    public static void startWithPreferences(LauncherPreferences preferences) {
+    public static void startWithPreferences(LauncherPreferences preferences, boolean configure) {
         System.setProperty("runelite.launcher.nojvm", "true");
         System.setProperty("runelite.launcher.reflect", "true");
 
@@ -392,6 +392,12 @@ public class Launcher {
         try {
             Class<?> launcherClass = Class.forName(LAUNCHER_CLASS);
             String[] args = new String[]{};
+
+            if(configure) {
+                log.info("Starting Launcher (Configure)");
+                args = new String[]{"--configure"};
+            }
+
             launcherClass.getMethod("main", String[].class).invoke(null, (Object) args);
         } catch (Exception e) {
             log.error("Failed to start RuneLite launcher", e);
@@ -410,16 +416,23 @@ public class Launcher {
             log.warn("Failed to set system look and feel", e);
         }
 
-        boolean forceShowUI = Arrays.asList(args).contains("--configure");
+        boolean forceShowUI = Arrays.asList(args).contains("--force-ui");
+        boolean configure = Arrays.asList(args).contains("--configure");
 
         SwingUtilities.invokeLater(() -> {
             LauncherUI gui = new LauncherUI();
+
+            if(configure) {
+                gui.onStartClicked(true);
+                return;
+            }
+
             if(forceShowUI) {
-                log.info("Force showing UI, --configure arg passed");
+                log.info("Force showing UI, --force-ui arg passed");
                 gui.setVisible(true);
             } else if(gui.getPreferences().isSkipLauncher()) {
-                log.info("Skipping Kraken Launcher UI and starting RuneLite");
-                gui.onStartClicked();
+                log.info("Skipping Kraken Launcher UI and starting RuneLite {}", configure ? "(Configure)" : "");
+                gui.onStartClicked(configure);
             } else {
                 gui.setVisible(true);
             }
