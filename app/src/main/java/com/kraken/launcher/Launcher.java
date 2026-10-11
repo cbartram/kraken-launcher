@@ -603,9 +603,13 @@ public class Launcher {
 
     /**
      * Shows a single modal fatal-error dialog and blocks until it is created. The patching pipeline always runs off
-     * the Event Dispatch Thread, so invokeAndWait is safe here.
+     * the Event Dispatch Thread, so invokeAndWait is safe here. A --health-check launch exits with the message instead,
+     * since nobody is there to close the dialog.
      */
     static void showFatalError(String message) {
+        if (HealthCheck.isActive()) {
+            HealthCheck.launcherFailed(message);
+        }
         try {
             SwingUtilities.invokeAndWait(() -> new FatalErrorDialog(message).open());
         } catch (Exception e) {

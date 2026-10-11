@@ -45,13 +45,31 @@ public final class KrakenStartup {
 
         try {
             Launcher.logRuntimeEnvironment();
-            LauncherPreferences preferences = LauncherUI.awaitStart(launchArgs.getProfile(), launchArgs.isForceUi());
+            if (launchArgs.isHealthCheck()) {
+                HealthCheck.start();
+            }
+
+            LauncherPreferences preferences = LauncherUI.awaitStart(launchArgs.getProfile(), launchArgs.isForceUi(),
+                    launchArgs.isHealthCheck());
+
+            if (launchArgs.isHealthCheck()) {
+                // The check runs Kraken through the update safety gate whatever the saved preferences skip. The UI
+                // has already saved them, so this changes only the current launch.
+                preferences.setRuneliteMode(false);
+                preferences.setSkipUpdateCheck(false);
+            }
 
             if (preferences.isRuneliteMode()) {
                 return runeLiteMode(launchArgs);
             }
 
-            return Launcher.prepareKraken(preferences, launchArgs.isQa()) ? launchArgs.getRuneLiteArgs() : null;
+            if (Launcher.prepareKraken(preferences, launchArgs.isQa())) {
+                return launchArgs.getRuneLiteArgs();
+            }
+            if (HealthCheck.isActive()) {
+                HealthCheck.launcherFailed("see launcher.log");
+            }
+            return null;
         } catch (Throwable e) {
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();

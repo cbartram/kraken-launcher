@@ -76,9 +76,10 @@ public class LauncherUI extends JFrame {
      * Start. Cancel exits the process. Must not be called on the Event Dispatch Thread.
      * @param cliProfile Profile name passed with --kraken-profile, which overrides the saved selection, or null
      * @param forceShow True to show the launcher even when Skip Launcher is saved (--force-ui)
+     * @param unattended True to start with the saved preferences without showing anything (--health-check)
      * @return The preferences the user started with
      */
-    public static LauncherPreferences awaitStart(String cliProfile, boolean forceShow) throws InterruptedException, InvocationTargetException {
+    public static LauncherPreferences awaitStart(String cliProfile, boolean forceShow, boolean unattended) throws InterruptedException, InvocationTargetException {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
@@ -88,7 +89,10 @@ public class LauncherUI extends JFrame {
         CompletableFuture<LauncherPreferences> started = new CompletableFuture<>();
         SwingUtilities.invokeAndWait(() -> {
             LauncherUI gui = new LauncherUI(cliProfile, started);
-            if (forceShow) {
+            if (unattended) {
+                log.info("Starting without the Kraken Launcher UI for --health-check");
+                gui.onStartClicked();
+            } else if (forceShow) {
                 log.info("Force showing UI, --force-ui arg passed");
                 gui.setVisible(true);
             } else if (gui.getPreferences().isSkipLauncher()) {

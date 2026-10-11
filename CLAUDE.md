@@ -14,7 +14,7 @@ Version comes from the `VERSION` env var (defaults to `1.0.0`) and is filtered i
 
 Tests are JUnit 4 under `app/src/test` (`./gradlew test`). CI (`.github/workflows/release.yml`) builds on push to master, versions as `1.0.<run_number>`, tags, uploads the fat jar as `KrakenSetup.jar` and a zipped exe+JRE bundle to SeaweedFS, and cuts a GitHub release.
 
-Runtime CLI flags (passed through `RuneLite.exe`, e.g. `./RuneLite.exe --qa`): `--qa` (beta bootstrap), `--force-ui` (show the launcher UI even when Skip Launcher is saved), `--kraken-profile <name>` (log in as a Jagex account linked through the Profiles plugin; see `KrakenProfiles`). `LaunchArgs` strips these before RuneLite's launcher runs, because RuneLite treats any leftover positional argument as the client arguments. RuneLite's own `--configure` and `--postinstall` pass straight through without the Kraken UI.
+Runtime CLI flags (passed through `RuneLite.exe`, e.g. `./RuneLite.exe --qa`): `--qa` (beta bootstrap), `--health-check` (start Kraken unattended, wait for the client's `KRAKEN_HEALTH` line and exit 0 healthy / 1 unhealthy / 2 no line within 5 minutes / 3 the launcher did not start the client; see `HealthCheck`), `--force-ui` (show the launcher UI even when Skip Launcher is saved), `--kraken-profile <name>` (log in as a Jagex account linked through the Profiles plugin; see `KrakenProfiles`). `LaunchArgs` strips these before RuneLite's launcher runs, because RuneLite treats any leftover positional argument as the client arguments. RuneLite's own `--configure` and `--postinstall` pass straight through without the Kraken UI.
 
 Useful paths on a dev machine:
 - Logs: `~/.runelite/logs/launcher.log` for the installed launcher (RuneLite.jar's `logback.xml` is first on the class path); `~/.runelite/kraken/logs/launcher.log` for the Installer and IDE runs
@@ -49,6 +49,10 @@ The one class that *does* compile against RuneLite (`ClientWatcher`, which uses 
 `Launcher.checkInjectedClientVersion` compares Kraken's bootstrap `hash` against RuneLite's `injected-client` artifact hash, and Kraken's `hookHash` against the `rlicn-*` artifact hash. Any mismatch means RuneLite shipped an unreviewed update and the launcher halts with a `FatalErrorDialog`. Users can bypass with "Skip Update Check" or run vanilla via "RuneLite Mode" (which skips `patch()` and lets RuneLite fork a stock client). Both are `LauncherPreferences` flags persisted to `krakenprefs.json`.
 
 Bootstrap sources: `https://seaweed.kraken-plugins.com/kraken-bootstrap-static/bootstrap.json` (or `bootstrap-qa.json` with `--qa`) and `https://static.runelite.net/bootstrap.json`.
+
+### Health check
+
+`--health-check` never shows UI: `LauncherUI.awaitStart` starts with the saved preferences, `KrakenStartup` forces Kraken mode and the safety gate for that launch only, and `showFatalError` exits with code 3 instead of opening a dialog. `HealthCheck` waits on a daemon thread for the `kraken.health` system property, which Kraken-Client's `ClientHealthReporter` sets after patching (the client shares this JVM but not its classes). The launcher sets `kraken.healthCheck`, which makes the client apply every patch whatever its config disables. Launcher-side JSON is only read with Gson (`fromJson`); the launcher's own failure line is written by hand because RuneLite.jar's minimized Gson wins on the installed class path.
 
 ### Offline launches
 

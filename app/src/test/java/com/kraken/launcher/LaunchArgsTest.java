@@ -34,6 +34,16 @@ public class LaunchArgsTest {
     }
 
     @Test
+    public void readsAndRemovesTheHealthCheckFlag() {
+        LaunchArgs args = LaunchArgs.parse(new String[]{"--qa", "--health-check", "--debug"});
+
+        assertTrue(args.isHealthCheck());
+        assertTrue(args.isQa());
+        assertArrayEquals(new String[]{"--debug"}, args.getRuneLiteArgs());
+        assertFalse(LaunchArgs.parse(new String[]{"--qa"}).isHealthCheck());
+    }
+
+    @Test
     public void readsTheProfileWrittenWithAnEqualsSign() {
         LaunchArgs args = LaunchArgs.parse(new String[]{"--kraken-profile=MyCharacter"});
 

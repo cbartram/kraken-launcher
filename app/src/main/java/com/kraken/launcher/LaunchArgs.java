@@ -29,12 +29,14 @@ import java.util.List;
 public final class LaunchArgs {
 
     static final String QA = "--qa";
+    static final String HEALTH_CHECK = "--health-check";
     static final String FORCE_UI = "--force-ui";
     static final String PROFILE = "--kraken-profile";
     private static final String LAUNCH_MODE = "--launch-mode";
     private static final List<String> PASS_THROUGH = Arrays.asList("--postinstall", "--configure");
 
     private final boolean qa;
+    private final boolean healthCheck;
     private final boolean forceUi;
     private final String profile;
     private final boolean passThrough;
@@ -47,6 +49,7 @@ public final class LaunchArgs {
      */
     public static LaunchArgs parse(String[] args) {
         boolean qa = false;
+        boolean healthCheck = false;
         boolean forceUi = false;
         String profile = null;
         boolean passThrough = false;
@@ -56,6 +59,8 @@ public final class LaunchArgs {
             String arg = args[i];
             if (QA.equals(arg)) {
                 qa = true;
+            } else if (HEALTH_CHECK.equals(arg)) {
+                healthCheck = true;
             } else if (FORCE_UI.equals(arg)) {
                 forceUi = true;
             } else if (PROFILE.equals(arg)) {
@@ -74,7 +79,7 @@ public final class LaunchArgs {
             profile = null;
         }
 
-        return new LaunchArgs(qa, forceUi, profile, passThrough, runeLiteArgs.toArray(new String[0]));
+        return new LaunchArgs(qa, healthCheck, forceUi, profile, passThrough, runeLiteArgs.toArray(new String[0]));
     }
 
     /**

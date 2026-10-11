@@ -77,6 +77,26 @@ To run the installer in QA mode which uses a beta build of the Kraken client pas
 ./RuneLite.exe --qa
 ```
 
+To check a build without playing, add `--health-check`. The launcher starts Kraken without its UI or dialogs, and the
+Kraken client applies every client patch and verifies each one changed the client. The client then publishes a
+`KRAKEN_HEALTH {json}` line, which the launcher prints and logs to `launcher.log` before exiting. Patching happens before
+login, so no account is needed. The exit code is the result:
+
+| Exit code | Meaning |
+|---|---|
+| 0 | Every patch applied and verified, and `hooks.json` was mapped for the running RuneLite version. |
+| 1 | The client reported a failed patch or mismatched hooks; the line's `problems` say which. |
+| 2 | The client published no health line within 5 minutes (it did not start, or the Kraken plugin did not load). |
+| 3 | The launcher did not start the client: a bootstrap could not be fetched, or the RuneLite update safety check failed. |
+
+```powershell
+$check = Start-Process "$env:LOCALAPPDATA\RuneLite\RuneLite.exe" -ArgumentList '--qa', '--health-check' -Wait -PassThru
+$check.ExitCode
+```
+
+The check runs Kraken and the update safety check even when RuneLite Mode or Skip Update Check is saved, without changing
+the saved preferences.
+
 To start the client logged in as a specific Jagex account, link your characters once with the Profiles plugin inside the
 client and then either pick the character from the launcher's "Character" drop down or pass its name on the command line:
 
