@@ -334,13 +334,10 @@ public class Launcher {
                     continue;
                 }
 
-                try {
-                    File cachedArtifact = bootstrapDownloader.cacheArtifact(artifact);
-                    addUrlToClassLoader(urlClassLoader, cachedArtifact.toURI().toURL());
-                } catch (Exception e) {
-                    log.info("No cached artifact {}, falling back to remote URL: {}", artifact.getName(), e.getMessage());
-                    addUrlToClassLoader(urlClassLoader, new URL(artifact.getPath()));
-                }
+                // Like the client and api, a dependency that cannot be verified aborts injection rather than being
+                // loaded from its remote URL unchecked.
+                File cachedArtifact = bootstrapDownloader.cacheArtifact(artifact);
+                addUrlToClassLoader(urlClassLoader, cachedArtifact.toURI().toURL());
             }
 
             // Wait for the RuneLite injector to be created by Guice, then load the Kraken plugin. Runs on the same

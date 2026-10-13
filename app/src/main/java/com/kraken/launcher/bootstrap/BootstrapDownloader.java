@@ -256,6 +256,19 @@ public class BootstrapDownloader {
         return connection.getInputStream();
     }
 
+    /**
+     * Returns the download URL for content with the given SHA-256, with the hash added as a query parameter.
+     * Cloudflare caches jars from SeaweedFS for hours while bootstraps and checksums are always fetched fresh, so a jar
+     * re-uploaded under the same name is served stale against its new hash until the edge copy expires. The query
+     * string is part of Cloudflare's cache key and is ignored by SeaweedFS and repo.runelite.net, so new content always
+     * gets a new cache entry while unchanged content is still served from the edge.
+     * @param url    The artifact's URL
+     * @param sha256 The SHA-256 the content must match
+     */
+    public static URL hashKeyedUrl(String url, String sha256) throws IOException {
+        return new URL(url + (url.contains("?") ? "&" : "?") + "sha256=" + sha256.toLowerCase(Locale.ROOT));
+    }
+
     private File ensureCacheDir() throws IOException {
         if (!cacheDir.exists() && !cacheDir.mkdirs()) {
             throw new IOException("Unable to create Kraken cache directory: " + cacheDir.getAbsolutePath());
@@ -284,11 +297,11 @@ public class BootstrapDownloader {
             Files.delete(localFile.toPath());
         }
 
-        // Cache miss — download, verify, then atomically move into place
+        // Cache miss
         log.info("Downloading artifact to local cache: {}", artifact.getName());
         Path tempFile = Files.createTempFile(cacheDir.toPath(), artifact.getName() + "-", ".part");
         try {
-            URL url = new URL(artifact.getPath());
+            URL url = hashKeyedUrl(artifact.getPath(), expectedHash);
             try (InputStream in = new BufferedInputStream(openStream(url))) {
                 Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
             }
@@ -312,7 +325,7 @@ public class BootstrapDownloader {
      * long-lived cache. Used for the Kraken client and api jars, which change frequently, with the bootstrap kept as
      * the source of truth. Each download is also kept in the cache under the artifact's name, and an
      * {@link #isOffline() offline} launch uses that copy instead of downloading. Either way the SHA-256 must match the
-     * bootstrap hash, except for the Kraken client.
+     * bootstrap hash.
      * <p>
      * The returned file is a session copy named after this process ({@code <artifact>-<pid>.jar}), so a running client
      * never holds the kept copy open while another launch replaces it, and {@link #pruneCache()} can tell when the
@@ -345,15 +358,14 @@ public class BootstrapDownloader {
                 Files.setLastModifiedTime(tempFile, FileTime.from(Instant.now()));
             } else {
                 log.info("Downloading and verifying artifact (uncached): {}", artifact.getName());
-                URL url = new URL(artifact.getPath());
+                URL url = hashKeyedUrl(artifact.getPath(), expectedHash);
                 try (InputStream in = new BufferedInputStream(openStream(url))) {
                     Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
                 }
             }
 
             String actualHash = computeHash(tempFile.toFile());
-            // Client is our artifact skip hash check
-            if (!expectedHash.equalsIgnoreCase(actualHash) && !artifact.getName().toLowerCase(Locale.ROOT).contains("kraken-client-")) {
+            if (!expectedHash.equalsIgnoreCase(actualHash)) {
                 throw new IOException("SHA-256 verification failed for " + artifact.getName()
                         + ". Expected " + expectedHash + " but got " + actualHash);
             }

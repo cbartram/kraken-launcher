@@ -1,0 +1,74 @@
+# AGENTS.md
+
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+
+## Build & Run
+
+```shell
+./gradlew clean shadowJar     # app/build/libs/kraken-launcher-<version>-fat.jar
+./gradlew clean createExe     # app/build/launch4j/KrakenInstaller.exe (needs a `jre` folder beside it at runtime)
+java -jar app/build/libs/kraken-launcher-1.0.0-fat.jar   # runs the Installer GUI
+```
+
+Version comes from the `VERSION` env var (defaults to `1.0.0`) and is filtered into `kraken-version.properties` by `processResources`. Java 17 toolchain — do not use APIs above 17.
+
+Tests are JUnit 4 under `app/src/test` (`./gradlew test`). CI (`.github/workflows/release.yml`) builds on push to master, versions as `1.0.<run_number>`, tags, uploads the fat jar as `KrakenSetup.jar` and a zipped exe+JRE bundle to SeaweedFS, and cuts a GitHub release.
+
+Runtime CLI flags (passed through `RuneLite.exe`, e.g. `./RuneLite.exe --qa`): `--qa` (beta bootstrap), `--health-check` (start Kraken unattended, wait for the client's `KRAKEN_HEALTH` line and exit 0 healthy / 1 unhealthy / 2 no line within 5 minutes / 3 the launcher did not start the client; see `HealthCheck`), `--force-ui` (show the launcher UI even when Skip Launcher is saved), `--kraken-profile <name>` (log in as a Jagex account linked through the Profiles plugin; see `KrakenProfiles`). `LaunchArgs` strips these before RuneLite's launcher runs, because RuneLite treats any leftover positional argument as the client arguments. RuneLite's own `--configure` and `--postinstall` pass straight through without the Kraken UI.
+
+Useful paths on a dev machine:
+- Logs: `~/.runelite/logs/launcher.log` for the installed launcher (RuneLite.jar's `logback.xml` is first on the class path); `~/.runelite/kraken/logs/launcher.log` for the Installer and IDE runs
+- Preferences: `~/.runelite/kraken/krakenprefs.json`
+- Artifact cache: `~/.runelite/kraken/repository2/`
+- RuneLite dir: `%LOCALAPPDATA%\RuneLite` (Windows) or `/Applications/RuneLite.app/Contents/Resources` (macOS)
+
+## Architecture
+
+This jar has **two entry points** that run in completely different contexts:
+
+1. **`Installer`** — the fat jar's `Main-Class` and the launch4j `mainClassName`. A one-shot Swing GUI the user runs once. It copies itself (or downloads `KrakenSetup.jar` from SeaweedFS when running as `.exe`) into the RuneLite directory, then rewrites `config.json` through `Installer.applyKrakenConfig`: `mainClass` and `classPath` stay RuneLite's own (`net.runelite.launcher.Launcher`, `["RuneLite.jar"]`) and `vmArgs` → `-javaagent:<jar>` plus the `--add-opens`/`--add-exports` list. It also appends `--disable-telemetry` to `settings.json`, then marks both files read-only so RuneLite cannot revert them. `Uninstaller` reverses this and **must be kept in sync** with any `Installer` change.
+
+2. **`KrakenAgent`** — started by `KrakenAgentEntry`, the manifest's `Premain-Class`, so it runs in RuneLite's launcher JVM before `net.runelite.launcher.Launcher.main`. `KrakenAgentEntry` lives in the `agentEntry` source set (`app/src/agentEntry`), compiled for Java 8, so it loads on whatever JRE RuneLite bundles; below Java 17 it shows a warning and returns so RuneLite starts without Kraken, otherwise it reflectively calls `KrakenAgent.premain`. `premain` never sees the program arguments, so it only registers the `Instrumentation` with ByteBuddy and inlines `LauncherMainAdvice` at the start of RuneLite's `main` (the transformer is removed once applied). The advice calls `KrakenStartup.beforeRuneLite(args)` (once per JVM), which shows the launcher UI and returns RuneLite's arguments, or `null` to skip RuneLite's `main`. Kraken mode runs `Launcher.prepareKraken`: it sets `runelite.launcher.reflect` so the client runs in this JVM, verifies bootstraps and injects Kraken artifacts on a background thread. RuneLite Mode changes nothing except forcing `--launch-mode FORK` over a REFLECT launch mode, so RuneLite forks a stock client. `Launcher.main` is the entry point for IDE runs and for installs whose `config.json` still names it as `mainClass` (older installers, such as an existing `KrakenInstaller.exe`, always download the latest jar but write the old layout): it migrates `config.json` to the current layout (`Installer.migrateConfigJson`) before running the same `KrakenStartup`, and hands a launch started by RuneLite's fork (`--classpath` in the args) straight to RuneLite's launcher.
+
+### The class loader boundary
+
+This is the single most important constraint in the codebase. `Launcher` runs on the **system class loader**; RuneLite loads the client into a **child `URLClassLoader`**. The launcher therefore cannot reference RuneLite types directly at runtime — every RuneLite interaction in `Launcher` goes through reflection (`Class.forName`/`loadClass` on the located class loader).
+
+The one class that *does* compile against RuneLite (`ClientWatcher`, which uses `EventBus`, `PluginManager`, `SplashScreen`) is declared `compileOnly 'net.runelite:client'` and is only ever loaded *through RuneLite's class loader* — which is why `Launcher.injectDependencies` adds the launcher's own jar URL to that loader before instantiating it. Never add a direct import of a RuneLite class to any other file.
+
+### Injection sequence (`Launcher.injectDependencies`)
+
+1. Poll `UIManager.get("ClassLoader")` until a loader defining `net.runelite.client.rs` appears — that's RuneLite's `URLClassLoader`.
+2. Reflectively call `URLClassLoader.addURL`. On Java 16+ this fails with `InaccessibleObjectException`, so `openJavaBasePackage("java.net")` uses the ByteBuddy `Instrumentation` handle to `redefineModule` and open `java.base/java.net` (the same helper opens `java.lang` and `java.util` for the profile environment override). `KrakenAgent.premain` registers the `Instrumentation` with ByteBuddy (`ByteBuddyAgent.install()` through the `Agent-Class` entry when run from an IDE) — byte-buddy must stay a system-classloader dependency and cannot move into the bootstrap.
+3. Add every artifact from the Kraken bootstrap. `kraken-client-*` and `kraken-api-*` are deliberately **re-downloaded every launch** through `BootstrapDownloader.fetchLatestArtifact` (their versions are also published as the `kraken-client-version`/`kraken-api-version` system properties); each download is also kept in the cache under the artifact name, but only offline launches read that copy. Everything else goes through `BootstrapDownloader.cacheArtifact`, which SHA-256-verifies against the bootstrap hash and atomically moves into the cache. Every artifact, the client included, must match its bootstrap hash or injection aborts; never fall back to loading an unverified jar or remote URL. Downloads (and the Installer's `KrakenSetup.jar`) are requested through `BootstrapDownloader.hashKeyedUrl` (`?sha256=<hash>`): Cloudflare caches `.jar` files from SeaweedFS for 4 hours but never the `.json`/`.sha256` files, so a jar re-uploaded under the same name would otherwise be served stale against its fresh hash.
+4. On another thread, poll `net.runelite.client.RuneLite.getInjector()`, then use the **`com.google.inject.Injector` interface** (not the impl class — the impl is not accessible across loaders) to obtain a `ClientWatcher` and invoke `start(KrakenLoaderPlugin.class)`.
+5. `ClientWatcher` waits for the splash screen to close, then enables/starts the Kraken loader plugin **on the EDT** to avoid racing RuneLite's config and profile managers. If the Kraken jar landed before RuneLite's core plugin scan, RuneLite already instantiated the loader and that instance is reused — RuneLite treats two plugins with the same name as conflicts and disables them through the shared config key, so loading a second instance would silently prevent the loader from ever starting.
+
+### Bootstrap safety gate
+
+`Launcher.checkInjectedClientVersion` compares Kraken's bootstrap `hash` against RuneLite's `injected-client` artifact hash, and Kraken's `hookHash` against the `rlicn-*` artifact hash. Any mismatch means RuneLite shipped an unreviewed update and the launcher halts with a `FatalErrorDialog`. Users can bypass with "Skip Update Check" or run vanilla via "RuneLite Mode" (which skips `patch()` and lets RuneLite fork a stock client). Both are `LauncherPreferences` flags persisted to `krakenprefs.json`.
+
+Bootstrap sources: `https://seaweed.kraken-plugins.com/kraken-bootstrap-static/bootstrap.json` (or `bootstrap-qa.json` with `--qa`) and `https://static.runelite.net/bootstrap.json`.
+
+### Health check
+
+`--health-check` never shows UI: `LauncherUI.awaitStart` starts with the saved preferences, `KrakenStartup` forces Kraken mode and the safety gate for that launch only, and `showFatalError` exits with code 3 instead of opening a dialog. `HealthCheck` waits on a daemon thread for the `kraken.health` system property, which Kraken-Client's `ClientHealthReporter` sets after patching (the client shares this JVM but not its classes). The launcher sets `kraken.healthCheck`, which makes the client apply every patch whatever its config disables. Launcher-side JSON is only read with Gson (`fromJson`); the launcher's own failure line is written by hand because RuneLite.jar's minimized Gson wins on the installed class path.
+
+### Offline launches
+
+Every verified Kraken bootstrap is saved with its `.sig` in the artifact cache. When a verified bootstrap cannot be downloaded (server unreachable, bad status, or bad signature), `BootstrapDownloader` re-verifies the saved copy against the pinned key and switches to offline mode. In that mode `fetchLatestArtifact` copies the client and api kept by the last online launch to a session copy instead of downloading. The safety gate still runs against the saved bootstrap, so an offline launch only starts while RuneLite's client matches it (or with Skip Update Check). Without a saved bootstrap the launch fails as before. The Kraken client loads sideloaded plugins before sign-in and keeps stored credentials while the API is unreachable, so users can still run their own plugins during an outage.
+
+### Cache pruning
+
+The client loads its own session copy of the Kraken client and api, `<artifact>-<pid>.jar`, never the kept copy, so a later launch can replace the kept copy while the client runs. `deleteOnExit` cannot remove a session copy on Windows (the class loader still has it open at exit), so `BootstrapDownloader.pruneCache` (queued on the patcher executor behind the plugin watcher) deletes session copies whose process is gone (or whose pid now belongs to a process started after the copy was written). That check reads the session copy's modified time, so an offline launch re-stamps its copy after `Files.copy`, which on Windows keeps the kept copy's older modified time. It also deletes, like RuneLite's launcher does with its own repository, every other cached jar that neither the bootstrap in use nor a saved bootstrap (`bootstrap.json` or `bootstrap-qa.json`) names, compared case-insensitively. Files that are not jars are never deleted, and no jar is deleted when a saved bootstrap cannot be read. Regular dependencies are loaded straight from the cache, so on Windows a jar a running client still uses is locked and survives until a later launch; on macOS/Linux it is deleted, which can break lazy resource loading in a long-running client still on the previous bootstrap.
+
+## Conventions & gotchas
+
+- Everything except the Installer runs on **RuneLite's bundled JRE** (`<RuneLite dir>/jre`), not the JRE shipped next to `KrakenInstaller.exe`. RuneLite installs from before its launcher 2.8.0 (July 2026) still bundle Java 11, so `Installer.checkRuneLiteJava` refuses to install on them and `KrakenAgentEntry` must never reference a Java 17 class directly. Keep `KrakenAgentEntry.MINIMUM_JAVA_VERSION` in step with the toolchain here and in the client/API/plugins repos.
+- Java agents and the callstack are visible to Jagex in the login packet, so runtime patching must happen through the already-attached agent rather than by attaching a new one — don't introduce a second agent attach path.
+- If you add a JVM arg the launcher needs, update `Installer.REQUIRED_VM_ARGS` (or `MAC_REQUIRED_VM_ARGS`), the `Uninstaller` cleanup if it needs removing, and the manual-install JSON examples in `README.md`.
+- Lombok (`@Slf4j`, `@Data`, `@Getter`) is used throughout; bootstrap models are plain Gson-mapped `@Data` classes.
+- Don't use comments like // --------------------- something here ----------------------
+- This repo is one of several siblings under `kraken/` (`kraken-client`, `kraken-api`, `kraken-plugins`, `kraken-updater`). The launcher only knows about them through bootstrap artifact names and the reflectively-loaded `net.runelite.client.plugins.kraken.KrakenLoaderPlugin`.
+- RuneLite Mode depends on two RuneLite behaviours: on Windows/macOS its launcher forks the client as `RuneLite.exe -c -J … -- --classpath …`, and the native launcher (`runelite/launcher` → `native/src/packr.cpp`) ignores `config.json`'s `vmArgs` whenever `-J` is given while still reading `mainClass`/`classPath` from it. Re-check both after RuneLite launcher updates, and never put Kraken back into `mainClass` or `classPath`.
+- In the installed launcher JVM `RuneLite.jar` is first on the class path, so its minimized Gson 2.8.5 (no `JsonParser`), Guava, SLF4J and Logback (and its `logback.xml`) win over the fat jar's. Launcher-path code should only use `Gson#fromJson` and the `Json*` element classes. The Installer and Uninstaller run standalone and are not affected.

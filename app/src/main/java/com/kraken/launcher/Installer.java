@@ -1,6 +1,7 @@
 package com.kraken.launcher;
 
 import com.google.gson.*;
+import com.kraken.launcher.bootstrap.BootstrapDownloader;
 import com.kraken.launcher.ui.Theme;
 import com.kraken.launcher.util.Utils;
 import lombok.extern.slf4j.Slf4j;
@@ -278,34 +279,35 @@ public class Installer {
     /**
      * Downloads the launcher jar to a temporary file, verifies its SHA-256 against the checksum published next to it,
      * then atomically moves it into place. The jar becomes a -javaagent (full JVM access), so a corrupted or
-     * truncated download must never be installed. Note: the checksum lives in the same bucket as the jar, so this
-     * guards integrity (partial downloads, CDN corruption) rather than authenticity against a compromised bucket -
-     * that would require a code-signed installer or a hash pinned outside the bucket.
+     * truncated download must never be installed. The checksum is read first and the jar is requested under it, since
+     * Cloudflare caches the jar but not the checksum and would otherwise serve the previous release's jar for hours
+     * after an upload (see {@link BootstrapDownloader#hashKeyedUrl}). Note: the checksum lives in the same bucket as
+     * the jar, so this guards integrity (partial downloads, CDN corruption) rather than authenticity against a
+     * compromised bucket - that would require a code-signed installer or a hash pinned outside the bucket.
      */
     private static void downloadAndVerifyJar(URL jarUrl, URL checksumUrl, File targetDir, File targetJar) throws IOException {
+        String expectedHash;
+        try {
+            expectedHash = fetchString(checksumUrl).split("\\s+")[0];
+        } catch (FileNotFoundException e) {
+            throw new IOException("Could not find the integrity checksum for " + targetJar.getName() + " ("
+                    + checksumUrl + "). The release may still be publishing; please try again in a few minutes.", e);
+        }
+
         File tempJar = File.createTempFile("KrakenSetup-", ".jar.part", targetDir);
         try {
-            URLConnection connection = jarUrl.openConnection();
+            URLConnection connection = BootstrapDownloader.hashKeyedUrl(jarUrl.toString(), expectedHash).openConnection();
             connection.setConnectTimeout(DOWNLOAD_CONNECT_TIMEOUT_MS);
             connection.setReadTimeout(DOWNLOAD_READ_TIMEOUT_MS);
             try (InputStream in = connection.getInputStream()) {
                 Files.copy(in, tempJar.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
 
-            // TODO This is disabled for now as hashes produced by the jar in CI don't match hashes from the downloaded file
-//            String expectedHash;
-//            try {
-//                expectedHash = fetchString(checksumUrl).split("\\s+")[0];
-//            } catch (FileNotFoundException e) {
-//                throw new IOException("Could not find the integrity checksum for " + targetJar.getName() + " ("
-//                        + checksumUrl + "). The release may still be publishing; please try again in a few minutes.", e);
-//            }
-//            String actualHash = sha256Hex(tempJar);
-            // even though they are the same file.
-//            if (!expectedHash.equalsIgnoreCase(actualHash)) {
-//                throw new IOException("Downloaded " + targetJar.getName() + " failed SHA-256 verification. Expected "
-//                        + expectedHash + " but got " + actualHash + ". Refusing to install a tampered or corrupted jar.");
-//            }
+            String actualHash = sha256Hex(tempJar);
+            if (!expectedHash.equalsIgnoreCase(actualHash)) {
+                throw new IOException("Downloaded " + targetJar.getName() + " failed SHA-256 verification. Expected "
+                        + expectedHash + " but got " + actualHash + ". Refusing to install a tampered or corrupted jar.");
+            }
 
             Files.move(tempJar.toPath(), targetJar.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } finally {

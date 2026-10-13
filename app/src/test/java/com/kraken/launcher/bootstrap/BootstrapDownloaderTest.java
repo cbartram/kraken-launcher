@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.KeyPair;
@@ -23,7 +24,9 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiPredicate;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -48,6 +51,7 @@ public class BootstrapDownloaderTest {
     public TemporaryFolder temp = new TemporaryFolder();
 
     private final Map<String, byte[]> served = new HashMap<>();
+    private final List<URI> requests = new CopyOnWriteArrayList<>();
     private HttpServer server;
     private KeyPair keyPair;
     private BiPredicate<byte[], String> verifier;
@@ -64,6 +68,7 @@ public class BootstrapDownloaderTest {
 
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", exchange -> {
+            requests.add(exchange.getRequestURI());
             byte[] body = served.get(exchange.getRequestURI().getPath());
             exchange.sendResponseHeaders(body == null ? 404 : 200, body == null ? -1 : body.length);
             if (body != null) {
@@ -175,6 +180,46 @@ public class BootstrapDownloaderTest {
         offline.downloadKrakenBootstrap();
 
         assertThrows(IOException.class, () -> offline.fetchLatestArtifact(artifact(offline, CLIENT)));
+    }
+
+    @Test
+    public void clientThatDoesNotMatchTheBootstrapIsRejected() throws Exception {
+        BootstrapDownloader online = downloader();
+        online.downloadKrakenBootstrap();
+        served.put("/" + CLIENT, "unreviewed client jar".getBytes(StandardCharsets.UTF_8));
+
+        assertThrows(IOException.class, () -> online.fetchLatestArtifact(artifact(online, CLIENT)));
+        assertFalse(new File(cacheDir, CLIENT).exists());
+    }
+
+    @Test
+    public void dependencyThatDoesNotMatchTheBootstrapIsRejected() throws Exception {
+        BootstrapDownloader online = downloader();
+        online.downloadKrakenBootstrap();
+        served.put("/" + DEPENDENCY, "tampered dependency jar".getBytes(StandardCharsets.UTF_8));
+
+        assertThrows(IOException.class, () -> online.cacheArtifact(artifact(online, DEPENDENCY)));
+        assertFalse(new File(cacheDir, DEPENDENCY).exists());
+    }
+
+    @Test
+    public void artifactsAreRequestedUnderTheirBootstrapHash() throws Exception {
+        BootstrapDownloader online = downloader();
+        online.downloadKrakenBootstrap();
+        Artifact client = artifact(online, CLIENT);
+        Artifact dependency = artifact(online, DEPENDENCY);
+
+        online.fetchLatestArtifact(client);
+        online.cacheArtifact(dependency);
+
+        assertTrue(requests.contains(URI.create("/" + CLIENT + "?sha256=" + client.getHash())));
+        assertTrue(requests.contains(URI.create("/" + DEPENDENCY + "?sha256=" + dependency.getHash())));
+    }
+
+    @Test
+    public void hashKeyedUrlKeepsAnExistingQuery() throws Exception {
+        assertEquals("https://host/a.jar?sha256=abc", BootstrapDownloader.hashKeyedUrl("https://host/a.jar", "ABC").toString());
+        assertEquals("https://host/a.jar?v=1&sha256=abc", BootstrapDownloader.hashKeyedUrl("https://host/a.jar?v=1", "abc").toString());
     }
 
     @Test
